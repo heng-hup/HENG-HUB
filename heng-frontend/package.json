@@ -33,5 +33,17 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "cloudflare": {
+    "pages": {
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist",
+      "rootDirectory": "heng-frontend",
+      "environment": {
+        "NODE_ENV": "production",
+        "BUILD_ENV": "cloudflare",
+        "AUTO_DEPLOY": "true"
+      }
+    }
+  }
 }
