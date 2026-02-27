@@ -1,0 +1,5 @@
+name = "heng-api"
+main = "server_worker.js"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+account_id = "44b90049aa97b5f50c92c36c20ad449f"

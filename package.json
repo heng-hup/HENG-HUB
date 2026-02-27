@@ -1,0 +1,18 @@
+{
+  "name": "heng-hub",
+  "version": "1.0.0",
+  "description": "🌍 HENG-HUB GLOBAL (Frontend + Backend + Smart Contract)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "deploy:frontend": "cd heng-frontend && npm run build && npx wrangler pages deploy dist --project-name=heng-hub",
+    "deploy:backend": "cd backend && npx wrangler deploy",
+    "deploy:all": "npm run deploy:backend && npm run deploy:frontend"
+  },
+  "dependencies": {
+    "axios": "^1.13.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
