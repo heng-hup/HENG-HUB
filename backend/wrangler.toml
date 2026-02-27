@@ -1,6 +1,6 @@
 name = "heng-api"
 main = "server_worker.js"
 compatibility_date = "2024-12-01"
-compatibility_flags = ["nodejs_compat"]
+compatibility_flags = []
+node_compat = true
 account_id = "44b90049aa97b5f50c92c36c20ad449f"
-# trigger deploy 28-02-2026
