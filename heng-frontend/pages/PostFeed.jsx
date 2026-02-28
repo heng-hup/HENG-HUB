@@ -1,0 +1,40 @@
+import { useState } from "react";
+import Navbar from "../components/Navbar";
+import { autoPostToGlobal } from "../utils/aiPostHandler";
+
+export default function PostFeed() {
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handlePost = async () => {
+    setLoading(true);
+    const result = await autoPostToGlobal(text);
+    alert(result.message);
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white p-6">
+      <h1 className="text-2xl font-bold text-center mb-6">
+        ⚡ โพสต์อัตโนมัติด้วย HENG AI
+      </h1>
+
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        className="w-full p-4 bg-gray-800 rounded-lg mb-4"
+        placeholder="เขียนสิ่งที่อยากแชร์ หรือแนบลิงก์วิดีโอ..."
+      />
+
+      <button
+        disabled={loading}
+        onClick={handlePost}
+        className="w-full bg-yellow-400 text-black py-2 rounded-lg font-bold"
+      >
+        {loading ? "กำลังโพสต์..." : "🚀 โพสต์ทั่วโลก"}
+      </button>
+
+      <Navbar />
+    </div>
+  );
+}

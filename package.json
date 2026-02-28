@@ -9,6 +9,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "npx wrangler pages deploy dist --project-name=heng-hub --branch=production",
+    "deploy:frontend": "cd heng-frontend && npm run build && npx wrangler pages deploy dist --project-name=heng-hub",
+    "deploy:backend": "cd backend && npx wrangler deploy",
+    "deploy:all": "npm run deploy:backend && npm run deploy:frontend",
     "postinstall": "npm run build"
   },
   "dependencies": {
@@ -39,12 +42,12 @@
     "pages": {
       "buildCommand": "npm run build",
       "outputDirectory": "dist",
-      "rootDirectory": "heng-frontend",
-      "environment": {
-        "NODE_ENV": "production",
-        "BUILD_ENV": "cloudflare",
-        "AUTO_DEPLOY": "true"
-      }
+      "rootDirectory": "heng-frontend"
+    },
+    "environment": {
+      "NODE_ENV": "production",
+      "BUILD_ENV": "cloudflare",
+      "AUTO_DEPLOY": "true"
     }
   }
 }

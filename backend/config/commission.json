@@ -1,0 +1,8 @@
+{
+  "gift":        { "hengFee": 0.45, "creatorShare": 0.55 },
+  "market":      { "hengFee": 0.05, "sellerShare": 0.95 },
+  "withdraw":    { "hengFee": 0.03, "creatorShare": 0.97 },
+  "topup":       { "hengFee": 0.03 },
+  "ads":         { "hengFee": 0.20, "creatorShare": 0.80 },
+  "payout":      { "hengFee": 0.02, "creatorShare": 0.98 }
+}
