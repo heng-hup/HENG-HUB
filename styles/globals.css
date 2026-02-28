@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 🌍 ธีมหลัก */
+html, body {
+  @apply bg-gradient-to-b from-black via-gray-900 to-black text-yellow-300 font-sans antialiased;
+  min-height: 100vh;
+}
+
+/* โลโก้ */
+.logo {
+  @apply flex items-center justify-center text-4xl font-extrabold text-yellow-400 mb-2;
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+}
+.logo span {
+  @apply ml-2;
+}
+
+/* การ์ดโพสต์ */
+.card {
+  @apply bg-gradient-to-b from-gray-900 to-black border border-yellow-400/30 rounded-2xl p-4 mb-3 shadow-lg text-center w-80 text-gray-200 transition-all duration-300;
+}
+.card:hover {
+  @apply border-yellow-300 shadow-yellow-400/30;
+}
+.card strong {
+  @apply text-yellow-300;
+}
+
+/* ปุ่มทอง */
+.btn-heng {
+  @apply bg-yellow-400 text-black rounded-xl px-4 py-2 font-bold shadow-md hover:bg-yellow-300 transition-all duration-300;
+}
+
+/* ปุ่มดำ */
+.btn-dark {
+  @apply bg-gray-800 text-yellow-300 rounded-xl px-4 py-2 hover:bg-gray-700 transition-all duration-300;
+}
+
+/* ปุ่มกลาง */
+.fab {
+  @apply bg-yellow-400 text-black rounded-full w-12 h-12 flex items-center justify-center text-3xl font-bold shadow-lg transition-all duration-300;
+  position: fixed;
+  bottom: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+}
+.fab:hover {
+  @apply bg-yellow-300 scale-110;
+}
+
+/* Navbar */
+.navbar {
+  @apply fixed bottom-0 left-0 w-full bg-gradient-to-t from-gray-900 to-black flex justify-around items-center py-2 border-t border-yellow-400/20;
+}
+.nav-item {
+  @apply flex flex-col items-center text-yellow-400 text-sm hover:text-white transition-all duration-300;
+}
+
+/* เอฟเฟกต์ */
+.glow {
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out;
+}
