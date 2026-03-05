@@ -2,72 +2,88 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 🌍 ธีมหลัก */
+/* 🌍 ฟอนต์และธีมพื้นฐานของ HENG */
 html, body {
-  @apply bg-gradient-to-b from-black via-gray-900 to-black text-yellow-300 font-sans antialiased;
-  min-height: 100vh;
+  @apply bg-black text-gray-100 font-sans antialiased;
+  scroll-behavior: smooth;
 }
 
-/* โลโก้ */
-.logo {
-  @apply flex items-center justify-center text-4xl font-extrabold text-yellow-400 mb-2;
-  text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
-}
-.logo span {
-  @apply ml-2;
+/* 💛 สีหลักของแบรนด์ HENG */
+:root {
+  --heng-gold: #FFD700;
+  --heng-dark: #0a0a0a;
+  --heng-gray: #1a1a1a;
 }
 
-/* การ์ดโพสต์ */
-.card {
-  @apply bg-gradient-to-b from-gray-900 to-black border border-yellow-400/30 rounded-2xl p-4 mb-3 shadow-lg text-center w-80 text-gray-200 transition-all duration-300;
-}
-.card:hover {
-  @apply border-yellow-300 shadow-yellow-400/30;
-}
-.card strong {
-  @apply text-yellow-300;
-}
-
-/* ปุ่มทอง */
+/* 🟡 ปุ่มหลัก */
 .btn-heng {
-  @apply bg-yellow-400 text-black rounded-xl px-4 py-2 font-bold shadow-md hover:bg-yellow-300 transition-all duration-300;
+  @apply bg-yellow-400 text-black font-bold rounded-xl px-4 py-2 transition-all duration-300;
+}
+.btn-heng:hover {
+  @apply bg-yellow-300 scale-105;
 }
 
-/* ปุ่มดำ */
+/* 🖤 ปุ่มกลับ */
 .btn-dark {
-  @apply bg-gray-800 text-yellow-300 rounded-xl px-4 py-2 hover:bg-gray-700 transition-all duration-300;
+  @apply bg-gray-800 text-yellow-300 font-medium px-4 py-2 rounded-xl transition-all duration-300;
+}
+.btn-dark:hover {
+  @apply bg-gray-700 text-yellow-400;
 }
 
-/* ปุ่มกลาง */
-.fab {
-  @apply bg-yellow-400 text-black rounded-full w-12 h-12 flex items-center justify-center text-3xl font-bold shadow-lg transition-all duration-300;
-  position: fixed;
-  bottom: 4.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
+/* 🔲 การ์ด UI */
+.card-heng {
+  @apply bg-gray-900 border border-yellow-500/20 rounded-2xl p-4 shadow-lg transition-all duration-300;
 }
-.fab:hover {
-  @apply bg-yellow-300 scale-110;
+.card-heng:hover {
+  @apply border-yellow-400/40 shadow-yellow-400/10;
 }
 
-/* Navbar */
+/* 💬 กล่องข้อความ */
+.input-heng {
+  @apply w-full bg-gray-800 text-yellow-300 rounded-xl px-3 py-2 outline-none border border-gray-700 focus:border-yellow-400 transition-all duration-200;
+}
+
+/* 🌐 ลิงก์ */
+a {
+  @apply text-yellow-400 hover:text-yellow-300 transition-colors duration-300;
+}
+
+/* 🧭 Navbar */
 .navbar {
-  @apply fixed bottom-0 left-0 w-full bg-gradient-to-t from-gray-900 to-black flex justify-around items-center py-2 border-t border-yellow-400/20;
+  @apply fixed top-0 left-0 w-full bg-black/80 backdrop-blur-md z-50 flex justify-between items-center px-6 py-3 border-b border-yellow-500/20;
 }
 .nav-item {
-  @apply flex flex-col items-center text-yellow-400 text-sm hover:text-white transition-all duration-300;
+  @apply mx-2 text-gray-300 hover:text-yellow-400 transition-all duration-300;
 }
 
-/* เอฟเฟกต์ */
+/* 📱 Responsive Utility */
+@media (max-width: 768px) {
+  .navbar {
+    @apply flex-col space-y-2;
+  }
+}
+
+/* 🎥 ส่วนของ HENG CLIP */
+.video-caption {
+  @apply absolute bottom-16 left-4 text-yellow-300;
+}
+.video-caption h3 {
+  @apply font-bold text-lg;
+}
+.video-caption p {
+  @apply text-sm opacity-90;
+}
+
+/* 🌈 เอฟเฟกต์เพิ่มเติม */
 .glow {
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
 }
 
-@keyframes fade-up {
+.fade-in {
+  animation: fadeIn 1s ease-in-out;
+}
+@keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-up {
-  animation: fade-up 0.5s ease-out;
 }

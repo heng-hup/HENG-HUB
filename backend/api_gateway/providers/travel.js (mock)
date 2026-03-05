@@ -1,8 +1,0 @@
-// heng/backend/api_gateway/providers/travel.js
-export async function searchTravel(place) {
-  // use Booking/Skyscanner in production; demo return mock offers
-  return [
-    { id: "bk_1", hotelName: `${place} Hotel A`, price: 4200, link: "#" },
-    { id: "bk_2", hotelName: `${place} Inn B`, price: 3200, link: "#" }
-  ];
-}

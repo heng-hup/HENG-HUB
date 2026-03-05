@@ -1,20 +1,18 @@
-let localStream;
+let stream;
 
-export function initCall(videoElement, setConnected) {
-  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-    .then((stream) => {
-      localStream = stream;
-      videoElement.srcObject = stream;
-      setConnected(true);
-    })
-    .catch((err) => {
-      console.error("ไม่สามารถเปิดกล้อง/ไมค์ได้:", err);
-      setConnected(false);
-    });
-}
-
-export function endCall() {
-  if (localStream) {
-    localStream.getTracks().forEach((track) => track.stop());
+export const initCall = async (videoRef, setConnected) => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    videoRef.srcObject = stream;
+    setConnected(true);
+  } catch (err) {
+    console.error("ไม่สามารถเปิดกล้อง/ไมค์ได้", err);
   }
-}
+};
+
+export const endCall = () => {
+  if (stream) {
+    stream.getTracks().forEach((t) => t.stop());
+  }
+  window.history.back();
+};
