@@ -1,58 +1,26 @@
-import Image from "next/image";
-import Head from "next/head";
+import { Link } from "react-router-dom";
 import styles from "../styles/Landing.module.css";
 
 export default function Landing() {
   return (
-    <>
-      <Head>
-        <title>HENG HENG GLOBAL CO., LTD. — HENG Coins</title>
-        <meta
-          name="description"
-          content="HENG HENG GLOBAL — แพลตฟอร์มครบวงจร: HENG Coins, Market, Live, Chat, Creator"
-        />
-      </Head>
+    <div className={styles.container}>
 
-      <main className={styles.container}>
-        <section className={styles.hero}>
-          <div className={styles.logoArea}>
-            <Image
-              src="/logo.png"
-              alt="HENG HENG GLOBAL"
-              width={120}
-              height={120}
-              className={styles.logo}
-            />
-            <h1>บริษัท เฮง เฮง โกลบอล จำกัด</h1>
-            <h2>HENG HENG GLOBAL CO., LTD.</h2>
-            <p className={styles.tagline}>
-              แพลตฟอร์มครบวงจร — การเงิน ครีเอเตอร์ ไลฟ์ มาร์เก็ต และแชต
-            </p>
-          </div>
+      <h1>HENG HUB</h1>
 
-          <div className={styles.btnRow}>
-            <a href="/market" className={styles.btnPrimary}>
-              เข้าสู่แพลตฟอร์ม
-            </a>
-            <a href="/docs" className={styles.btnOutline}>
-              อ่านเพิ่มเติม
-            </a>
-          </div>
-        </section>
+      <div className={styles.menu}>
 
-        <section className={styles.features}>
-          <div className={styles.card}>🪙 HENG Coins — ใช้จ่ายทั่วระบบ</div>
-          <div className={styles.card}>🔥 Burn 1% ทุกธุรกรรม</div>
-          <div className={styles.card}>💸 ระบบภาษีและคอมมิชชั่นอัตโนมัติ</div>
-        </section>
+        <Link to="/feed">🏠 หน้าหลัก</Link>
 
-        <footer className={styles.footer}>
-          <p>
-            © {new Date().getFullYear()} HENG HENG GLOBAL CO., LTD. — All rights
-            reserved.
-          </p>
-        </footer>
-      </main>
-    </>
+        <Link to="/market">🛒 ร้านค้า</Link>
+
+        <Link to="/live">🎥 ไลฟ์</Link>
+
+        <Link to="/chat">📞 แชท & โทร</Link>
+
+        <Link to="/profile">👤 โปรไฟล์</Link>
+
+      </div>
+
+    </div>
   );
 }

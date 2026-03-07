@@ -1,0 +1,18 @@
+/* HENG Global Style */
+
+body{
+  margin:0;
+  padding:0;
+  font-family: system-ui, Arial, sans-serif;
+  background:#0b0b0b;
+  color:white;
+}
+
+a{
+  text-decoration:none;
+  color:inherit;
+}
+
+button{
+  cursor:pointer;
+}

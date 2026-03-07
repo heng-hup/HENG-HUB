@@ -2,42 +2,24 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-// ✅ import หน้าเว็บทั้งหมด
-import Landing from "./pages/index.jsx";
-import Wallet from "./pages/wallet.jsx";
-import Market from "./pages/market.jsx";
-import GlobalHub from "./pages/globalhub.jsx";
-import ChatCall from "./pages/chatcall.jsx";
-import PostFeed from "./pages/PostFeed.jsx";
+import Home from "./pages/Home.jsx";
+import Feed from "./pages/Feed.jsx";
+import Video from "./pages/Video.jsx";
+import Market from "./pages/Market.jsx";
+import Wallet from "./pages/Wallet.jsx";
+import Profile from "./pages/Profile.jsx";
 
-// ✅ import style
-import "./styles/Landing.module.css";
-
-// ✅ render ระบบทั้งหมด
-const root = ReactDOM.createRoot(document.getElementById("root"));
-
-root.render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
 
-        {/* หน้าแรก */}
-        <Route path="/" element={<Landing />} />
-
-        {/* กระเป๋าเงิน */}
-        <Route path="/wallet" element={<Wallet />} />
-
-        {/* ตลาด */}
+        <Route path="/" element={<Home />} />
+        <Route path="/feed" element={<Feed />} />
+        <Route path="/video" element={<Video />} />
         <Route path="/market" element={<Market />} />
-
-        {/* Social Hub */}
-        <Route path="/hub" element={<GlobalHub />} />
-
-        {/* Chat / Call */}
-        <Route path="/chat" element={<ChatCall />} />
-
-        {/* Feed */}
-        <Route path="/feed" element={<PostFeed />} />
+        <Route path="/wallet" element={<Wallet />} />
+        <Route path="/profile" element={<Profile />} />
 
       </Routes>
     </BrowserRouter>
