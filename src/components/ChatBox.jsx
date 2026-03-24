@@ -41,13 +41,30 @@ export default function ChatBox({ onBack }) {
 
   // --- ฟังก์ชันจัดการเสียง ---
   const playRingtone = () => {
-    ringtoneRef.current.loop = true;
-    ringtoneRef.current.play().catch(e => console.log("รอการตอบโต้จาก User เพื่อเล่นเสียง"));
+    if (ringtoneRef.current) {
+      ringtoneRef.current.loop = true;
+      ringtoneRef.current.currentTime = 0; // เริ่มใหม่ทุกครั้งที่มีสายเข้า
+      
+      const playPromise = ringtoneRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.log("Browser บล็อกเสียง: ระบบจะรอให้พี่คลิกหน้าจอหนึ่งครั้งเพื่อดังเสียง");
+          // ถ้าโดนบล็อก ให้ดังทันทีที่คลิกส่วนไหนก็ได้ของหน้าจอ
+          const enableAudio = () => {
+            ringtoneRef.current.play();
+            window.removeEventListener('click', enableAudio);
+          };
+          window.addEventListener('click', enableAudio, { once: true });
+        });
+      }
+    }
   };
 
   const stopRingtone = () => {
-    ringtoneRef.current.pause();
-    ringtoneRef.current.currentTime = 0;
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+    }
   };
 
   // --- ฟังก์ชัน รับ/วางสาย ---
@@ -55,12 +72,11 @@ export default function ChatBox({ onBack }) {
     stopRingtone();
     alert("กำลังเชื่อมต่อสาย...");
     setIncomingCall(null);
-    // Logic สำหรับเปิดหน้าจอคุย (WebRTC) จะอยู่ตรงนี้
   };
 
   const rejectCall = () => {
     stopRingtone();
-    if (socketRef.current) {
+    if (socketRef.current && incomingCall) {
       socketRef.current.emit("reject-call", { to: incomingCall.fromId });
     }
     setIncomingCall(null);
@@ -76,10 +92,8 @@ export default function ChatBox({ onBack }) {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     if (isMobile) {
-      // 📱 โทรผ่านแอปมือถือ
       window.location.href = isVideo ? `facetime:${targetNumber}` : `tel:${targetNumber}`;
     } else {
-      // 💻 โทรผ่านระบบ HENG (Fly.io)
       if (socketRef.current) {
         socketRef.current.emit("call-user", {
           toNumber: targetNumber,
@@ -179,7 +193,6 @@ export default function ChatBox({ onBack }) {
 
 const st = {
   container: { display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#F8FAFC', position: 'relative', overflow: 'hidden' },
-  // --- UI หน้าจอรับสาย ---
   callOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,30,60,0.95)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' },
   callCard: { textAlign: 'center', color: 'white', width: '85%' },
   brandBadge: { backgroundColor: '#EAB308', color: '#003366', padding: '5px 15px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', display: 'inline-block', marginBottom: '30px' },
@@ -189,7 +202,6 @@ const st = {
   callActions: { display: 'flex', justifyContent: 'space-around', width: '100%' },
   btnReject: { width: '65px', height: '65px', borderRadius: '50%', border: 'none', backgroundColor: '#EF4444', color: 'white', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' },
   btnAccept: { width: '65px', height: '65px', borderRadius: '50%', border: 'none', backgroundColor: '#22C55E', color: 'white', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' },
-  // --- UI ปกติ ---
   yellowHeader: { height: '80px', backgroundColor: '#EAB308', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 15px', color: '#003366', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
   headerLeft: { display: 'flex', alignItems: 'center', gap: '10px', flex: 1 },
   headerRight: { display: 'flex', gap: '15px' },
