@@ -6,6 +6,7 @@ import {
 import { st } from './styles/chatStyles';
 import ToolGrid from './components/ToolGrid';
 
+
 // นำเข้า Modal และ Component ย่อย
 import MessageContextMenu from './components/MessageContextMenu';
 import CreateGroupModal from './components/CreateGroupModal';
@@ -60,7 +61,7 @@ export default function HengHengSuperApp() {
     }
   };
 
-  const sendMessage = (content, type = 'text') => {
+    const sendMessage = (content, type = 'text') => {
     const messageContent = content || text;
     if (type === 'text' && !messageContent.trim()) return;
 
@@ -68,6 +69,8 @@ export default function HengHengSuperApp() {
       id: Date.now(), 
       text: type === 'text' ? messageContent : "",
       sticker: type === 'sticker' ? content : null,
+      image: type === 'image' ? content : null, // เพิ่มบรรทัดนี้
+      file: type === 'file' ? content : null,   // เพิ่มบรรทัดนี้
       sender: 'me', 
       replyData: replyTo ? { ...replyTo } : null,
       time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
@@ -175,12 +178,21 @@ export default function HengHengSuperApp() {
           }, () => alert("กรุณาเปิดการเข้าถึง GPS"));
         }
       },
-      'open_file': () => {
+            'open_file': () => {
         const input = document.createElement('input');
         input.type = 'file';
         input.onchange = (e) => {
           const file = e.target.files[0];
-          if (file) sendMessage(`📁 ส่งไฟล์: ${file.name}`);
+          if (file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            // ส่ง Object แทน String เพื่อให้ MessageBubble แยกแยะได้
+            sendMessage({
+              name: file.name,
+              size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+              ext: ext,
+              url: URL.createObjectURL(file)
+            }, 'file'); 
+          }
         };
         input.click();
       },
@@ -191,7 +203,10 @@ export default function HengHengSuperApp() {
         input.capture = 'environment';
         input.onchange = (e) => {
           const file = e.target.files[0];
-          if (file) sendMessage(`📸 ส่งรูปถ่าย: ${file.name}`);
+          if (file) {
+            const url = URL.createObjectURL(file);
+            sendMessage(url, 'image'); // เปลี่ยนจากส่งชื่อไฟล์ เป็นส่ง URL รูป
+          }
         };
         input.click();
       },
@@ -201,7 +216,10 @@ export default function HengHengSuperApp() {
         input.accept = 'image/*';
         input.onchange = (e) => {
           const file = e.target.files[0];
-          if (file) sendMessage(`🖼️ ส่งรูปภาพ: ${file.name}`);
+          if (file) {
+            const url = URL.createObjectURL(file);
+            sendMessage(url, 'image'); // เปลี่ยนจากส่งชื่อไฟล์ เป็นส่ง URL รูป
+          }
         };
         input.click();
       },
