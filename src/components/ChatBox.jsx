@@ -43,13 +43,12 @@ export default function ChatBox({ onBack }) {
   const playRingtone = () => {
     if (ringtoneRef.current) {
       ringtoneRef.current.loop = true;
-      ringtoneRef.current.currentTime = 0; // เริ่มใหม่ทุกครั้งที่มีสายเข้า
+      ringtoneRef.current.currentTime = 0; 
       
       const playPromise = ringtoneRef.current.play();
       if (playPromise !== undefined) {
         playPromise.catch(error => {
           console.log("Browser บล็อกเสียง: ระบบจะรอให้พี่คลิกหน้าจอหนึ่งครั้งเพื่อดังเสียง");
-          // ถ้าโดนบล็อก ให้ดังทันทีที่คลิกส่วนไหนก็ได้ของหน้าจอ
           const enableAudio = () => {
             ringtoneRef.current.play();
             window.removeEventListener('click', enableAudio);
@@ -88,9 +87,7 @@ export default function ChatBox({ onBack }) {
       alert("กรุณาใส่เบอร์โทรศัพท์ก่อนครับพี่");
       return;
     }
-
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
     if (isMobile) {
       window.location.href = isVideo ? `facetime:${targetNumber}` : `tel:${targetNumber}`;
     } else {
@@ -105,10 +102,10 @@ export default function ChatBox({ onBack }) {
     }
   };
 
-  // ข้อมูลแชท
+  // ข้อมูลแชท (ตัวอย่าง URL รูปภาพเพื่อให้พี่เห็นภาพตอน Deploy)
   const [messages] = useState([
     { id: 1, text: 'ยินดีต้อนรับสู่ HENG HENG แพลตฟอร์ม', sender: 'other', time: '10:00' },
-    { id: 2, text: 'ทดสอบระบบโทรเข้า-ออก และเสียงแบรนด์เรียบร้อย', sender: 'me', time: '10:05' },
+    { id: 2, text: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=500', sender: 'me', time: '10:05' },
   ]);
 
   const filteredMessages = messages.filter(msg => 
@@ -118,7 +115,7 @@ export default function ChatBox({ onBack }) {
   return (
     <div style={st.container}>
       
-      {/* --- 🔔 หน้าจอเด้งรับสาย (Incoming Call UI) --- */}
+      {/* --- 🔔 หน้าจอเด้งรับสาย --- */}
       {incomingCall && (
         <div style={st.callOverlay}>
           <div style={st.callCard}>
@@ -130,14 +127,9 @@ export default function ChatBox({ onBack }) {
             <p style={st.callType}>
               {incomingCall.type === 'video' ? 'วิดีโอคอลกำลังมา...' : 'กำลังเรียกสายเสียง...'}
             </p>
-            
             <div style={st.callActions}>
-              <button onClick={rejectCall} style={st.btnReject}>
-                <PhoneOff size={28} />
-              </button>
-              <button onClick={answerCall} style={st.btnAccept}>
-                <Phone size={28} />
-              </button>
+              <button onClick={rejectCall} style={st.btnReject}><PhoneOff size={28} /></button>
+              <button onClick={answerCall} style={st.btnAccept}><Phone size={28} /></button>
             </div>
           </div>
         </div>
@@ -150,17 +142,11 @@ export default function ChatBox({ onBack }) {
           {!isSearching ? (
             <div style={st.userInfo}>
               <span style={st.userName}>HENG HENG</span>
-              <input 
-                type="tel" 
-                placeholder="พิมพ์เบอร์ที่จะโทร..." 
-                value={targetNumber} 
-                onChange={(e) => setTargetNumber(e.target.value)} 
-                style={st.numberInput} 
-              />
+              <input type="tel" placeholder="เบอร์โทร..." value={targetNumber} onChange={(e) => setTargetNumber(e.target.value)} style={st.numberInput} />
             </div>
           ) : (
             <div style={st.searchBox}>
-              <input autoFocus placeholder="ค้นหาแชท..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={st.searchInput} />
+              <input autoFocus placeholder="ค้นหา..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={st.searchInput} />
               <X size={18} onClick={() => { setIsSearching(false); setSearchTerm(''); }} style={{ cursor: 'pointer' }} />
             </div>
           )}
@@ -173,16 +159,35 @@ export default function ChatBox({ onBack }) {
         </div>
       </div>
 
-      {/* --- 💬 Chat Area --- */}
+      {/* --- 💬 Chat Area (อัปเดตใหม่: ส่งรูปเห็นเป็นรูป) --- */}
       <div style={st.chatArea}>
-        {filteredMessages.map(msg => (
-          <div key={msg.id} style={msg.sender === 'me' ? st.myMsgRow : st.otherMsgRow}>
-            <div style={msg.sender === 'me' ? st.myBubble : st.otherBubble}>
-              {msg.text}
-              <div style={st.msgTime}>{msg.time}</div>
+        {filteredMessages.map(msg => {
+          // ตรวจสอบว่าข้อความเป็น URL รูปภาพหรือไม่
+          const isImage = msg.text.match(/\.(jpeg|jpg|gif|png|webp|jfif)$/i) || msg.text.startsWith('blob:');
+
+          return (
+            <div key={msg.id} style={msg.sender === 'me' ? st.myMsgRow : st.otherMsgRow}>
+              <div style={msg.sender === 'me' ? st.myBubble : st.otherBubble}>
+                {isImage ? (
+                  <div style={st.imageContainer}>
+                    <img src={msg.text} alt="HENG" style={st.chatImage} onClick={() => window.open(msg.text, '_blank')} />
+                    <div style={st.imageActions}>
+                      <button onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = msg.text;
+                        link.download = `HENG_${Date.now()}.jpg`;
+                        link.click();
+                      }} style={st.actionBtn}>📥 ดาวน์โหลดต้นฉบับ</button>
+                    </div>
+                  </div>
+                ) : (
+                  <span>{msg.text}</span>
+                )}
+                <div style={st.msgTime}>{msg.time}</div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <ChatActionSlider onMediaClick={() => setShowMedia(true)} />
@@ -215,5 +220,10 @@ const st = {
   myMsgRow: { display: 'flex', justifyContent: 'flex-end' },
   otherBubble: { backgroundColor: '#FFF', padding: '10px 14px', borderRadius: '18px 18px 18px 0', fontSize: '14px', maxWidth: '75%', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' },
   myBubble: { backgroundColor: '#003366', color: '#FFF', padding: '10px 14px', borderRadius: '18px 18px 0 18px', fontSize: '14px', maxWidth: '75%' },
-  msgTime: { fontSize: '10px', opacity: 0.5, marginTop: '4px', textAlign: 'right' }
+  msgTime: { fontSize: '10px', opacity: 0.5, marginTop: '4px', textAlign: 'right' },
+  // สไตล์ใหม่สำหรับรูปภาพ
+  imageContainer: { display: 'flex', flexDirection: 'column', gap: '5px' },
+  chatImage: { maxWidth: '100%', maxHeight: '300px', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
+  imageActions: { display: 'flex', justifyContent: 'flex-end' },
+  actionBtn: { fontSize: '10px', backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: 'inherit', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' },
 };
