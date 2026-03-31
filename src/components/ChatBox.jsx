@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Search, Phone, Video, MoreVertical, ArrowLeft, X, PhoneIncoming, PhoneOff 
+  Search, Phone, Video, MoreVertical, ArrowLeft, X, PhoneIncoming, PhoneOff, Image as ImageIcon, Loader2 
 } from 'lucide-react';
 import { io } from 'socket.io-client';
+
+// 🔥 นำเข้า Storage จากไฟล์ที่เราเพิ่งสร้าง
+import { storage } from '../firebase'; 
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 import MediaGalleryModal from './MediaGalleryModal'; 
 import ChatActionSlider from './ChatActionSlider'; 
@@ -15,19 +19,20 @@ export default function ChatBox({ onBack }) {
   const [isSearching, setIsSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [targetNumber, setTargetNumber] = useState(''); 
+  const [newMessage, setNewMessage] = useState(''); // สำหรับช่องพิมพ์ข้อความ
+  const [isUploading, setIsUploading] = useState(false); // สถานะอัปโหลดรูป
 
   // 📞 State สำหรับระบบจัดการสายเรียกเข้า
   const [incomingCall, setIncomingCall] = useState(null); 
   const socketRef = useRef();
+  const fileInputRef = useRef(); // สำหรับปุ่มเลือกรูป
   
   // 🎵 เตรียมเสียงเรียกเข้าแบรนด์ HENG (ไฟล์ต้องอยู่ที่ public/sounds/heng-ringtone.mp3)
   const ringtoneRef = useRef(new Audio('/sounds/heng-ringtone.mp3'));
 
   useEffect(() => {
-    // เชื่อมต่อ Fly.io
     socketRef.current = io(SIGNALING_SERVER);
 
-    // รับสัญญาณเมื่อมีคนโทรเข้า
     socketRef.current.on("incoming-call", (data) => {
       setIncomingCall(data);
       playRingtone();
@@ -44,16 +49,10 @@ export default function ChatBox({ onBack }) {
     if (ringtoneRef.current) {
       ringtoneRef.current.loop = true;
       ringtoneRef.current.currentTime = 0; 
-      
       const playPromise = ringtoneRef.current.play();
       if (playPromise !== undefined) {
         playPromise.catch(error => {
-          console.log("Browser บล็อกเสียง: ระบบจะรอให้พี่คลิกหน้าจอหนึ่งครั้งเพื่อดังเสียง");
-          const enableAudio = () => {
-            ringtoneRef.current.play();
-            window.removeEventListener('click', enableAudio);
-          };
-          window.addEventListener('click', enableAudio, { once: true });
+          window.addEventListener('click', () => { ringtoneRef.current.play(); }, { once: true });
         });
       }
     }
@@ -67,46 +66,75 @@ export default function ChatBox({ onBack }) {
   };
 
   // --- ฟังก์ชัน รับ/วางสาย ---
-  const answerCall = () => {
-    stopRingtone();
-    alert("กำลังเชื่อมต่อสาย...");
-    setIncomingCall(null);
-  };
-
-  const rejectCall = () => {
-    stopRingtone();
-    if (socketRef.current && incomingCall) {
-      socketRef.current.emit("reject-call", { to: incomingCall.fromId });
-    }
-    setIncomingCall(null);
-  };
+  const answerCall = () => { stopRingtone(); alert("กำลังเชื่อมต่อสาย..."); setIncomingCall(null); };
+  const rejectCall = () => { stopRingtone(); if (socketRef.current && incomingCall) { socketRef.current.emit("reject-call", { to: incomingCall.fromId }); } setIncomingCall(null); };
 
   // --- ฟังก์ชันโทรออก ---
   const handleCall = (isVideo) => {
-    if (!targetNumber) {
-      alert("กรุณาใส่เบอร์โทรศัพท์ก่อนครับพี่");
-      return;
-    }
+    if (!targetNumber) { alert("กรุณาใส่เบอร์โทรศัพท์ก่อนครับพี่"); return; }
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
       window.location.href = isVideo ? `facetime:${targetNumber}` : `tel:${targetNumber}`;
     } else {
       if (socketRef.current) {
-        socketRef.current.emit("call-user", {
-          toNumber: targetNumber,
-          type: isVideo ? "video" : "voice",
-          fromName: "HENG USER"
-        });
+        socketRef.current.emit("call-user", { toNumber: targetNumber, type: isVideo ? "video" : "voice", fromName: "HENG USER" });
         alert(`กำลังโทรออกไปที่เบอร์ ${targetNumber}...`);
       }
     }
   };
 
+  // --- 🔥 ฟังก์ชันอัปโหลดรูปภาพ (หัวใจสำคัญ) ---
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // ตรวจสอบว่าเป็นไฟล์รูปภาพหรือไม่
+    if (!file.type.startsWith('image/')) { alert("กรุณาเลือกไฟล์รูปภาพครับพี่"); return; }
+
+    setIsUploading(true); // แสดงสถานะกำลังโหลด
+    
+    // สร้างชื่อไฟล์แบบสุ่มเพื่อไม่ให้ซ้ำกัน
+    const fileName = `heng_${Date.now()}_${file.name}`;
+    // สร้าง Reference ไปยังที่เก็บไฟล์บน Firebase Storage
+    const storageRef = ref(storage, `chat_images/${fileName}`);
+    // เริ่มอัปโหลด
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => { /* สามารถทำ Progress Bar ตรงนี้ได้ */ },
+      (error) => { console.error("Upload failed", error); alert("อัปโหลดรูปไม่สำเร็จครับ"); setIsUploading(false); },
+      () => {
+        // อัปโหลดเสร็จแล้ว -> ดึง URL ของรูปออกมา
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          // ส่ง URL ของรูปภาพเข้าไปในแชททันที
+          sendChatMessage(downloadURL); 
+          setIsUploading(false);
+        });
+      }
+    );
+  };
+
   // ข้อมูลแชท (ตัวอย่าง URL รูปภาพเพื่อให้พี่เห็นภาพตอน Deploy)
-  const [messages] = useState([
+  const [messages, setMessages] = useState([
     { id: 1, text: 'ยินดีต้อนรับสู่ HENG HENG แพลตฟอร์ม', sender: 'other', time: '10:00' },
     { id: 2, text: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=500', sender: 'me', time: '10:05' },
   ]);
+
+  // --- ฟังก์ชันส่งข้อความแชท ---
+  const sendChatMessage = (text) => {
+    const textToSend = text || newMessage;
+    if (!textToSend.trim()) return;
+
+    const newMsg = {
+      id: Date.now(),
+      text: textToSend,
+      sender: 'me',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMessages(prev => [...prev, newMsg]);
+    setNewMessage(''); // ล้างช่องพิมพ์
+  };
 
   const filteredMessages = messages.filter(msg => 
     msg.text.toLowerCase().includes(searchTerm.toLowerCase())
@@ -115,18 +143,17 @@ export default function ChatBox({ onBack }) {
   return (
     <div style={st.container}>
       
+      {/* Input ไฟล์แบบซ่อน (สำหรับปุ่มเลือกรูป) */}
+      <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" style={{ display: 'none' }} />
+
       {/* --- 🔔 หน้าจอเด้งรับสาย --- */}
       {incomingCall && (
         <div style={st.callOverlay}>
           <div style={st.callCard}>
-            <div style={st.brandBadge}>HENG HENG CALL</div>
-            <div style={st.callerAvatar}>
-               <PhoneIncoming size={45} color="#EAB308" />
-            </div>
+            <div style={st.brandBadge}> CALL</div>
+            <div style={st.callerAvatar}><PhoneIncoming size={45} color="#EAB308" /></div>
             <h2 style={st.callerName}>{incomingCall.fromName || "สายเรียกเข้า"}</h2>
-            <p style={st.callType}>
-              {incomingCall.type === 'video' ? 'วิดีโอคอลกำลังมา...' : 'กำลังเรียกสายเสียง...'}
-            </p>
+            <p style={st.callType}>{incomingCall.type === 'video' ? 'วิดีโอคอลกำลังมา...' : 'กำลังเรียกสายเสียง...'}</p>
             <div style={st.callActions}>
               <button onClick={rejectCall} style={st.btnReject}><PhoneOff size={28} /></button>
               <button onClick={answerCall} style={st.btnAccept}><Phone size={28} /></button>
@@ -190,6 +217,22 @@ export default function ChatBox({ onBack }) {
         })}
       </div>
 
+      {/* --- ⌨️ Input Area (ปรับปรุงให้ส่งรูปได้) --- */}
+      <div style={st.inputArea}>
+        <button onClick={() => fileInputRef.current.click()} style={st.iconBtn}>
+          {isUploading ? <Loader2 size={22} style={st.spinning} /> : <ImageIcon size={22} />}
+        </button>
+        <input 
+          type="text" 
+          placeholder="พิมพ์ข้อความ..." 
+          value={newMessage} 
+          onChange={(e) => setNewMessage(e.target.value)} 
+          onKeyPress={(e) => { if(e.key === 'Enter') sendChatMessage(); }} 
+          style={st.mainInput} 
+        />
+        <button onClick={() => sendChatMessage()} style={st.sendBtn}>ส่ง</button>
+      </div>
+
       <ChatActionSlider onMediaClick={() => setShowMedia(true)} />
       {showMedia && <MediaGalleryModal onClose={() => setShowMedia(false)} />}
     </div>
@@ -215,15 +258,24 @@ const st = {
   numberInput: { backgroundColor: 'rgba(255,255,255,0.4)', border: '1px solid rgba(0,0,0,0.05)', borderRadius: '6px', padding: '5px 10px', fontSize: '13px', color: '#003366', marginTop: '4px', outline: 'none', width: '150px' },
   searchBox: { flex: 1, display: 'flex', alignItems: 'center', backgroundColor: '#FFF', borderRadius: '20px', padding: '5px 12px', marginRight: '10px' },
   searchInput: { flex: 1, border: 'none', outline: 'none', fontSize: '13px' },
-  chatArea: { flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' },
+  chatArea: { flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '70px' },
   otherMsgRow: { display: 'flex', justifyContent: 'flex-start' },
   myMsgRow: { display: 'flex', justifyContent: 'flex-end' },
   otherBubble: { backgroundColor: '#FFF', padding: '10px 14px', borderRadius: '18px 18px 18px 0', fontSize: '14px', maxWidth: '75%', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' },
   myBubble: { backgroundColor: '#003366', color: '#FFF', padding: '10px 14px', borderRadius: '18px 18px 0 18px', fontSize: '14px', maxWidth: '75%' },
   msgTime: { fontSize: '10px', opacity: 0.5, marginTop: '4px', textAlign: 'right' },
-  // สไตล์ใหม่สำหรับรูปภาพ
   imageContainer: { display: 'flex', flexDirection: 'column', gap: '5px' },
   chatImage: { maxWidth: '100%', maxHeight: '300px', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
   imageActions: { display: 'flex', justifyContent: 'flex-end' },
   actionBtn: { fontSize: '10px', backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: 'inherit', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' },
+  // สไตล์สำหรับ Input Area ใหม่
+  inputArea: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '70px', backgroundColor: '#FFF', display: 'flex', alignItems: 'center', padding: '0 15px', gap: '10px', borderTop: '1px solid #EEE' },
+  iconBtn: { border: 'none', backgroundColor: 'transparent', color: '#003366', cursor: 'pointer' },
+  mainInput: { flex: 1, height: '40px', borderRadius: '20px', border: '1px solid #DDD', padding: '0 15px', outline: 'none', fontSize: '14px' },
+  sendBtn: { border: 'none', backgroundColor: '#003366', color: '#FFF', padding: '8px 15px', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold' },
+  spinning: { animation: 'spin 1s linear infinite' }, // แอนิเมชันโหลดรูป
 };
+
+// เพิ่ม CSS สำหรับแอนิเมชัน Loader ลงในไฟล์ (หรือใส่ใน index.css)
+const styleSheet = document.styleSheets[0];
+styleSheet.insertRule('@keyframes spin { 100% { transform: rotate(360deg); } }', styleSheet.cssRules.length);

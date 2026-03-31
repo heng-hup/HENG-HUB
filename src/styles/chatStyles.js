@@ -7,7 +7,6 @@ export const st = {
     flexDirection: 'column', 
     background: '#F0F2F5', 
     fontFamily: 'sans-serif',
-    // ป้องกันการลากคลุมทั้งหน้าจอ ยกเว้นในแชท
     userSelect: 'none',
     WebkitUserSelect: 'none'
   },
@@ -36,7 +35,7 @@ export const st = {
   },
   msgRow: { display: 'flex', marginBottom: '15px', width: '100%' },
 
-  // ✅ Bubble ข้อความ (ปรับปรุงเพื่อการคัดลอก)
+  // ✅ Bubble ข้อความ (แก้ไขเพื่อรองรับสีน้ำเงินสดและเทานวลตามรูป 1000102243.jpg)
   bubble: { 
     padding: '10px 14px', 
     borderRadius: '18px', 
@@ -44,14 +43,15 @@ export const st = {
     fontSize: '14px', 
     position: 'relative', 
     boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-    // เปิดให้ลากคลุมเฉพาะใน Bubble
     userSelect: 'text',
     WebkitUserSelect: 'text',
     outline: 'none',
     transition: 'background 0.2s',
     wordBreak: 'break-word',
-    // ปรับสีแถบไฮไลท์ให้เป็นสีฟ้าอ่อนแบบมาตรฐาน LINE
-    cursor: 'text'
+    cursor: 'text',
+    // บังคับค่าเริ่มต้นให้เป็นสีเทานวล (สำหรับฝั่งเพื่อน)
+    background: '#E4E6EB',
+    color: '#050505'
   },
   timeText: { fontSize: '9px', opacity: 0.5, marginTop: '4px' },
   
@@ -74,11 +74,10 @@ export const st = {
     height: '40px', 
     padding: '0 12px', 
     margin: '0 5px',
-    userSelect: 'text' // ให้ช่อง Input พิมพ์ได้ปกติ
+    userSelect: 'text'
   },
   innerInput: { border: 'none', outline: 'none', flex: 1, fontSize: '14px', background: 'transparent' },
   
-  // ปุ่มไอคอนต่างๆ
   iconBtn: { 
     background: 'none', 
     border: 'none', 
@@ -120,7 +119,7 @@ export const st = {
     alignItems: 'center'
   },
   
-  // Tools Grid (เมนู Plus)
+  // Tools Grid
   toolsGrid: { 
     display: 'grid', 
     gridTemplateColumns: 'repeat(5, 1fr)', 
@@ -143,7 +142,7 @@ export const st = {
   },
   toolLabel: { color: '#FFD700', fontSize: '10px', marginTop: '5px' },
   
-  // ✅ Context Menu (เมนูกดค้าง)
+  // ✅ Context Menu
   whiteMenu: { 
     position: 'fixed', 
     background: '#FFF', 
@@ -152,7 +151,6 @@ export const st = {
     padding: '15px', 
     zIndex: 10000, 
     boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-    // เมนูไม่ควรลากคลุมได้
     userSelect: 'none',
     WebkitUserSelect: 'none'
   },

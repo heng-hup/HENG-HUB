@@ -1,0 +1,36 @@
+{
+  "id": "/",
+  "short_name": "HENG HENG",
+  "name": "HENG HENG - บริการครบวงจร",
+  "icons": [
+    {
+      "src": "logo-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "1000102275.png",
+      "sizes": "1018x480",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "หน้าหลัก HENG HENG บนคอมพิวเตอร์"
+    },
+    {
+      "src": "1000102276.png",
+      "sizes": "383x544",
+      "type": "image/png",
+      "label": "หน้าหลัก HENG HENG บนมือถือ"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FFFFFF",
+  "display": "standalone",
+  "theme_color": "#00338D"
+}

@@ -1,6 +1,39 @@
 import React from 'react';
+import { auth } from '../firebase'; 
 
-export default function Login({ setPage }) {
+export default function Login({ setPage: originalSetPage }) {
+
+  // --- [ ส่วนที่เพิ่ม: Logic สำหรับสลับบัญชีโดยไม่แก้ Code เดิม ] ---
+  const setPage = (page) => {
+    if (page === 'profile') {
+      const user = auth.currentUser;
+      
+      // ถ้ามี User ล็อกอินอยู่ ให้จำเข้าลิสต์ 8 บัญชีทันที
+      if (user) {
+        const userData = {
+          id: user.uid,
+          name: 'Nat ผู้บริหารสายเฮง...',
+          handle: `@${user.email.split('@')[0]}`,
+          avatar: '📸'
+        };
+
+        const savedAccounts = JSON.parse(localStorage.getItem('heng_accounts')) || [];
+        const isExist = savedAccounts.find(acc => acc.id === userData.id);
+        
+        if (!isExist && savedAccounts.length < 8) {
+          localStorage.setItem('heng_accounts', JSON.stringify([...savedAccounts, userData]));
+        }
+        localStorage.setItem('current_heng_user', JSON.stringify(userData));
+      }
+      
+      // สั่งไปหน้า profile ตามปกติเหมือนเดิมเป๊ะ
+      originalSetPage('profile');
+    } else {
+      originalSetPage(page);
+    }
+  };
+  // --- [ จบส่วนที่เพิ่ม ] ---
+
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>เข้าสู่ระบบ HENG-HENG</h2>

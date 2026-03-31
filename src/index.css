@@ -1,13 +1,14 @@
-/* พื้นฐานสำหรับ HENG-HUB */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Kanit', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #000000;
-
+  color-scheme: light;
+  color: #050505;
+  background-color: #ffffff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -16,24 +17,23 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  background: #000; /* พื้นหลังดำมหาเฮง */
+  background: #ffffff;
+  /* ป้องกันการเลื่อนซ้ายขวาเกินจอ */
+  overflow-x: hidden; 
 }
 
 #root {
   width: 100%;
 }
 
-/* ลบสไตล์เดิมของ Link */
 a {
   text-decoration: none;
   color: inherit;
 }
 
-/* สไตล์ปุ่มเบื้องต้น */
+/* --- ปรับแต่งปุ่มให้ดูหรูหราขึ้น (สไตล์ HENG HENG) --- */
 button {
   border-radius: 8px;
   border: 1px solid transparent;
@@ -42,14 +42,51 @@ button {
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 button:hover {
-  border-color: #ffd700;
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
-/* จัดการ Input ให้ดูสวยงาม */
+button:active {
+  transform: scale(0.95);
+}
+
 input {
   outline: none;
+}
+
+/* --- จัดการ Scrollbar สำหรับหน้าที่มีปุ่ม 1,000 ปุ่ม --- */
+/* ซ่อน Scrollbar ที่รบกวนสายตา แต่ยังเลื่อนได้ลื่นไหล */
+::-webkit-scrollbar {
+  width: 4px; /* ขนาดเล็กๆ ไม่รกจอ */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e0e0e0;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #F2D06B; /* สีทอง HENG เมื่อเลื่อน */
+}
+
+/* --- CSS สำหรับ Grid ของ ProfileGrid --- */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 10px;
+}
+
+/* ปรับปรุง Performance ของการเลื่อนใน Mobile */
+.scroll-smooth {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
