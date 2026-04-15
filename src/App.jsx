@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 
 import { CartProvider } from './context/CartContext.jsx';
 import CartPage from './pages/CartPage.jsx';
@@ -13,11 +13,21 @@ import Shop from './pages/Shop';
 // 📍 นำเข้าหน้า 1,000 ปุ่ม (ศูนย์จัดการบริการ)
 import ProfileGrid from './components/Profile/ProfileGrid';
 
+// ⚡️ นำเข้าหน้ากล้องระบบปุ่มกลางที่สร้างไว้
+import CameraOverlay from './components/CenterButtonSystem/CameraOverlay';
+
+// 🎬 นำเข้าส่วนระบบ Live ที่สร้างใหม่ (เพิ่มเข้าไป)
+import HostView from './components/LiveStream/HostView';
+import LivePage from './pages/LivePage';
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeTab, setActiveTab] = useState('home');
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation(); // 📍 ตัวเช็คตำแหน่งลิงก์ปัจจุบันเพื่อเปลี่ยนสีปุ่ม
+
+  // 📍 State สำหรับเปิด/ปิดหน้ากล้อง (ปุ่มกลาง)
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   // 📍 ส่วนพิกัดที่อยู่ (State กลาง)
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -30,15 +40,13 @@ export default function App() {
     });
   }, []);
 
-  const handleCreateContent = () => {
-    alert("เปิดกล้อง: ไลฟ์สด / ถ่ายภาพ / ถ่ายคลิป");
-    // อนาคต: พี่สามารถเขียน navigate('/create') เพื่อไปหน้าถ่ายคลิปปักตะกร้าได้ครับ
-  };
-
-  const goToPage = (page, path) => {
-    setActiveTab(page);
+  // 🔗 ฟังก์ชันสำหรับ Link ไปหน้าต่างๆ และอัปเดตสถานะปุ่ม
+  const goToPage = (path) => {
     navigate(path);
   };
+
+  // ✅ ฟังก์ชันเช็คสีไอคอนและชื่อปุ่มตามลิงก์ที่อยู่จริง (สีน้ำเงิน #00338D เมื่อ Active)
+  const getActiveColor = (path) => location.pathname === path ? '#00338D' : '#666';
 
   return (
     <CartProvider>
@@ -46,18 +54,16 @@ export default function App() {
         
         <div style={styles.contentArea}>
           <Routes>
-            {/* 🎥 หน้าหลัก: ฟีด Content & ค้นหาบริการ */}
+            {/* 🎥 หน้าหลัก */}
             <Route path="/" element={
               <Home 
-                activeTab={activeTab} 
-                setActiveTab={setActiveTab} 
                 isLoggedIn={isLoggedIn} 
                 setIsLoggedIn={setIsLoggedIn} 
                 runInstall={() => deferredPrompt?.prompt()} 
               />
             } />
 
-            {/* 🛒 หน้า Shop: สำหรับสั่งซื้อสินค้าที่ปักตะกร้า */}
+            {/* 🛒 หน้า Shop */}
             <Route path="/shop" element={
               <Shop 
                 isLoggedIn={isLoggedIn} 
@@ -73,33 +79,40 @@ export default function App() {
               />
             } />
 
-            {/* 👤 หน้า Profile: ศูนย์บัญชาการ (ถอนเงิน/จัดการข้อมูล) */}
+            {/* 👤 หน้า Profile */}
             <Route path="/profile" element={<ProfileContent />} />
 
-            {/* ⚙️ หน้าจัดการบริการทั้งหมด (1,000 ปุ่ม): ซ่อนไว้เปิดจากหน้า Profile */}
+            {/* ⚙️ หน้าจัดการบริการทั้งหมด (ลิงก์จากแชท/โทร) */}
             <Route path="/all-buttons" element={<ProfileGrid />} />
+
+            {/* ⚡️ หน้าลิงก์สำหรับปุ่มกลาง: ปรับให้แสดง HostView สำหรับการไลฟ์ */}
+            <Route path="/create" element={<HostView />} />
+            
+            {/* 📺 หน้าฟีดรวม Live */}
+            <Route path="/live-feed" element={<LivePage />} />
 
             <Route path="/register" element={<Register setIsLoggedIn={setIsLoggedIn} />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
           </Routes>
         </div>
 
-        {/* --- ส่วนจัดการเมนูด้านล่าง (ห้ามเปลี่ยนตำแหน่ง) --- */}
+        {/* --- ส่วนจัดการเมนูด้านล่าง: ทุกปุ่มคือลิงก์เข้าหน้ามันเลย --- */}
         <div style={styles.bottomNav}>
+          
           {/* 1. หน้าหลัก */}
-          <div style={styles.navItem} onClick={() => goToPage('home', '/')}>
-            <span style={{...styles.navIcon, color: activeTab === 'home' ? '#00338D' : '#666'}}>🏠</span>
-            <span style={{...styles.navLabel, color: activeTab === 'home' ? '#00338D' : '#666'}}>หน้าหลัก</span>
+          <div style={styles.navItem} onClick={() => goToPage('/')}>
+            <span style={{...styles.navIcon, color: getActiveColor('/')}}>🏠</span>
+            <span style={{...styles.navLabel, color: getActiveColor('/')}}>หน้าหลัก</span>
           </div>
           
           {/* 2. ร้านค้า */}
-          <div style={styles.navItem} onClick={() => goToPage('shop', '/shop')}>
-            <span style={{...styles.navIcon, color: activeTab === 'shop' ? '#00338D' : '#666'}}>🛒</span>
-            <span style={{...styles.navLabel, color: activeTab === 'shop' ? '#00338D' : '#666'}}>ร้านค้า</span>
+          <div style={styles.navItem} onClick={() => goToPage('/shop')}>
+            <span style={{...styles.navIcon, color: getActiveColor('/shop')}}>🛒</span>
+            <span style={{...styles.navLabel, color: getActiveColor('/shop')}}>ร้านค้า</span>
           </div>
 
-          {/* 3. ปุ่มกลาง: ⚡️ ไลฟ์สด/ถ่ายคลิป */}
-          <div style={styles.navItem} onClick={handleCreateContent}>
+          {/* 3. ปุ่มกลาง: ⚡️ กดแล้ว Link ไปหน้า /create (เข้าหน้าไลฟ์) */}
+          <div style={styles.navItem} onClick={() => { goToPage('/create'); }}>
             <div style={styles.hengButtonContainer}>
               <div style={styles.hengInnerGradient}>
                 <span style={styles.centerIcon}>⚡️</span>
@@ -107,18 +120,24 @@ export default function App() {
             </div>
           </div>
 
-          {/* 4. แชท/โทร (ตำแหน่งเดิมเป๊ะ) */}
-          <div style={styles.navItem} onClick={() => goToPage('chat', '/')}>
-            <span style={{...styles.navIcon, color: activeTab === 'chat' ? '#00338D' : '#666'}}>📞</span>
-            <span style={{...styles.navLabel, color: activeTab === 'chat' ? '#00338D' : '#666'}}>แชท/โทร</span>
+          {/* 4. แชท/โทร (Link ไปหน้าบริการทั้งหมด) */}
+          <div style={styles.navItem} onClick={() => goToPage('/all-buttons')}>
+            <span style={{...styles.navIcon, color: getActiveColor('/all-buttons')}}>📞</span>
+            <span style={{...styles.navLabel, color: getActiveColor('/all-buttons')}}>แชท/โทร</span>
           </div>
 
           {/* 5. โปรไฟล์ */}
-          <div style={styles.navItem} onClick={() => goToPage('profile', '/profile')}>
-            <span style={{...styles.navIcon, color: activeTab === 'profile' ? '#00338D' : '#666'}}>👤</span>
-            <span style={{...styles.navLabel, color: activeTab === 'profile' ? '#00338D' : '#666'}}>โปรไฟล์</span>
+          <div style={styles.navItem} onClick={() => goToPage('/profile')}>
+            <span style={{...styles.navIcon, color: getActiveColor('/profile')}}>👤</span>
+            <span style={{...styles.navLabel, color: getActiveColor('/profile')}}>โปรไฟล์</span>
           </div>
         </div>
+
+        {/* 🎥 แสดงหน้ากล้อง Overlay เมื่อเปิดใช้งาน (คงไว้ตามเดิม) */}
+        {isCameraOpen && (
+          <CameraOverlay onClose={() => setIsCameraOpen(false)} />
+        )}
+
       </div>
     </CartProvider>
   );

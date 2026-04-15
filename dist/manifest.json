@@ -2,6 +2,7 @@
   "id": "/",
   "short_name": "HENG HENG",
   "name": "HENG HENG - บริการครบวงจร",
+  "description": "HENG HENG: แพลตฟอร์มความสุข สร้างคอนเทนต์ แลกรับบริการ และช้อปปิ้งสินค้าพรีเมียมในที่เดียว",
   "icons": [
     {
       "src": "logo-192.png",
@@ -32,5 +33,10 @@
   "start_url": "/",
   "background_color": "#FFFFFF",
   "display": "standalone",
-  "theme_color": "#00338D"
+  "theme_color": "#00338D",
+  "orientation": "portrait",
+  "permissions": [
+    "camera",
+    "microphone"
+  ]
 }
