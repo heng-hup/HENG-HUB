@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Phone, Menu, UserPlus, X, Plus, Smile, Mic, Send } from 'lucide-react'; 
 
-// --- [1] Import Components & Actions ---
+// --- [1] Import Components & Actions (รักษาไว้ครบถ้วน) ---
 import { ActionButtons } from './components/ActionButtons';
 import ToolGrid from './components/ToolGrid';
 import MessageContextMenu from './components/MessageContextMenu.jsx';
 
-// Import Logic ของแต่ละปุ่ม (แยกไฟล์เพื่อความเป็นระเบียบ)
+// Import Logic ของแต่ละปุ่ม (รักษาไว้ครบถ้วน)
 import * as CopyAll from './actions/contextMenu/CopyAllBtn';
 import * as Translate from './actions/contextMenu/TranslateBtn';
 import * as SaveNote from './actions/contextMenu/SaveNoteBtn';
@@ -41,7 +41,6 @@ export default function HengHengSuperApp() {
   };
 
   // --- [3] Core Functions ---
-
   const sendMessage = (content, type = 'text') => {
     if (type === 'text' && !content?.trim() && !text.trim()) return;
     
@@ -64,7 +63,7 @@ export default function HengHengSuperApp() {
     setShowTools(false);
   };
 
-  // จัดการ Action เมื่อกดปุ่มในเมนูคลิกขวา
+  // จัดการ Action เมื่อกดปุ่มในเมนูคลิกขวา (รักษา Logic เดิม 100%)
   const handleContextMenuAction = (actionId, data) => {
     switch (actionId) {
       case 'copy_all':    CopyAll.exec(data.msgText); break;
@@ -74,7 +73,7 @@ export default function HengHengSuperApp() {
       case 'reply':       Reply.exec(data, chatSetters); break;
       case 'share':       Share.exec(data.msgText); break;
       case 'pin':         Pin.exec(data, chatSetters); break;
-      case 'capture':     Capture.exec('chat-area'); break; // แคปเจอร์หน้าจอแชท
+      case 'capture':     Capture.exec('chat-area'); break; 
       case 'unsend':      Unsend.exec(data.msgId, chatSetters); break;
       default: console.log("Action ID:", actionId);
     }
@@ -118,14 +117,14 @@ export default function HengHengSuperApp() {
         </div>
       </div>
 
-      {/* Pinned Messages (ประกาศ) เหมือน Line */}
+      {/* Pinned Messages */}
       {pinnedList.length > 0 && (
         <div style={styles.pinBar}>
           📌 {pinnedList[pinnedList.length - 1].msgText}
         </div>
       )}
 
-      {/* Chat Content Area */}
+      {/* Chat Content Area (เพิ่มความยืดหยุ่นให้ Scroll ลื่นบนมือถือ) */}
       <div 
         id="chat-area"
         ref={chatContainerRef}
@@ -143,28 +142,22 @@ export default function HengHengSuperApp() {
               backgroundColor: m.type === 'text' ? '#001F3F' : (m.type === 'action' ? '#FFD700' : 'transparent'),
               color: m.type === 'action' ? '#001F3F' : '#FFF',
             }}>
-              {/* UI ตอบกลับภายใน Bubble */}
               {m.replyData && (
                 <div style={styles.innerReplyBox}>
                    <div style={{ fontWeight: 'bold', color: '#FFD700' }}>{m.replyData.sender}</div>
                    <div style={{ opacity: 0.8, fontSize: '11px' }}>{m.replyData.text}</div>
                 </div>
               )}
-
-              {/* Reaction Emoji Badge */}
               {m.reaction && <div style={styles.reactionBadge}>{m.reaction}</div>}
-
-              {/* Message Content */}
               {m.type === 'text' && <span>{m.content}</span>}
               {m.type === 'action' && <span style={{ fontWeight: 'bold' }}>{m.content}</span>}
-              
               <div style={styles.msgTime}>{m.time}</div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Reply Preview UI (แถบตอบกลับเหนือช่องพิมพ์) */}
+      {/* Reply Preview UI */}
       {replyTo && (
         <div style={styles.replyPreviewBar}>
           <div style={styles.replyPreviewInfo}>
@@ -175,7 +168,7 @@ export default function HengHengSuperApp() {
         </div>
       )}
 
-      {/* Footer Area */}
+      {/* Footer Area (ปรับให้รองรับ Safe Area ของมือถือ) */}
       <div style={styles.footer}>
         <div style={styles.inputRow}>
           <button style={styles.iconBtn} onClick={() => setShowTools(!showTools)}>
@@ -199,10 +192,11 @@ export default function HengHengSuperApp() {
             {text.trim() === "" ? <Mic size={26} color="#FFD700" /> : <Send size={26} color="#FFD700" />}
           </button>
         </div>
+        {/* แผงไอคอน ToolGrid */}
         {showTools && <ToolGrid onSend={sendMessage} />}
       </div>
 
-      {/* Context Menu 20 ปุ่ม (เลเยอร์บนสุด) */}
+      {/* Context Menu 20 ปุ่ม */}
       {contextMenu && (
         <MessageContextMenu 
           x={contextMenu.x} 
@@ -216,30 +210,90 @@ export default function HengHengSuperApp() {
   );
 }
 
-// --- [5] Styles (หรูหราแบบ Super App) ---
+// --- [5] Styles (ฉบับสมบูรณ์: คอมไม่เพี้ยน มือถือไม่ขาด) ---
 const styles = {
-  appContainer: { display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', backgroundColor: '#F5F5F5', overflow: 'hidden', position: 'relative' },
-  header: { backgroundColor: '#FFD700', padding: '10px 15px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 100, boxShadow: '0 2px 5px rgba(0,0,0,0.1)' },
+  appContainer: { 
+    display: 'flex', 
+    flexDirection: 'column', 
+    height: '100%',     
+    width: '100%', 
+    backgroundColor: '#F5F5F5', 
+    overflow: 'hidden', 
+    position: 'relative',
+    boxSizing: 'border-box'
+  },
+  header: { 
+    backgroundColor: '#FFD700', 
+    padding: '10px 15px', 
+    height: '60px', 
+    minHeight: '60px', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    zIndex: 100, 
+    boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+    boxSizing: 'border-box'
+  },
   headerLeft: { display: 'flex', alignItems: 'center', gap: '10px' },
   logoBadge: { width: '35px', height: '35px', backgroundColor: '#001F3F', borderRadius: '50%', color: '#FFF', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' },
   brandName: { fontWeight: 'bold', color: '#001F3F', fontSize: '18px' },
   headerIcons: { display: 'flex', alignItems: 'center', gap: '18px', color: '#001F3F' },
-  callDropdown: { position: 'absolute', top: '40px', right: '-10px', backgroundColor: '#FFF', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', borderRadius: '12px', width: '140px', overflow: 'hidden', zIndex: 1000 },
+  callDropdown: { position: 'absolute', top: '50px', right: '10px', backgroundColor: '#FFF', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', borderRadius: '12px', width: '140px', overflow: 'hidden', zIndex: 1000 },
   dropdownItem: { padding: '12px', borderBottom: '1px solid #EEE', cursor: 'pointer', color: '#001F3F' },
   pinBar: { backgroundColor: '#FFF9E6', padding: '8px 15px', fontSize: '13px', borderBottom: '1px solid #FFE699', color: '#856404' },
-  chatArea: { flex: 1, overflowY: 'auto', padding: '15px' },
+  chatArea: { 
+    flex: 1, 
+    overflowY: 'auto', 
+    padding: '15px',
+    WebkitOverflowScrolling: 'touch' 
+  },
   messageRow: { display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' },
-  messageBubble: { maxWidth: '75%', padding: '10px 15px', borderRadius: '15px', position: 'relative', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' },
+  messageBubble: { maxWidth: '80%', padding: '10px 15px', borderRadius: '15px', position: 'relative', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' },
   innerReplyBox: { backgroundColor: 'rgba(255,255,255,0.1)', padding: '5px 10px', borderRadius: '8px', marginBottom: '5px', borderLeft: '3px solid #FFD700' },
   reactionBadge: { position: 'absolute', bottom: '-10px', left: '0', fontSize: '16px', background: '#FFF', borderRadius: '50%', padding: '2px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' },
   msgTime: { fontSize: '10px', textAlign: 'right', marginTop: '5px', opacity: 0.7 },
-  replyPreviewBar: { backgroundColor: '#FFFFFF', padding: '10px 15px', borderLeft: '5px solid #FFD700', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #EEE' },
+  replyPreviewBar: { 
+    backgroundColor: '#FFFFFF', 
+    padding: '8px 15px', 
+    borderLeft: '5px solid #FFD700', 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    borderTop: '1px solid #EEE',
+    maxHeight: '60px'
+  },
   replyPreviewInfo: { overflow: 'hidden' },
   replySender: { fontSize: '12px', color: '#001F3F', fontWeight: 'bold' },
   replyText: { fontSize: '13px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  footer: { backgroundColor: '#001F3F', paddingBottom: 'env(safe-area-inset-bottom)', zIndex: 101 },
-  inputRow: { display: 'flex', alignItems: 'center', padding: '12px 18px', gap: '12px' },
-  iconBtn: { background: 'none', border: 'none', padding: 0, cursor: 'pointer' },
-  inputContainer: { flex: 1, backgroundColor: '#FFF', borderRadius: '25px', display: 'flex', alignItems: 'center', padding: '6px 15px', margin: '0 5px' },
-  textInput: { flex: 1, border: 'none', outline: 'none', fontSize: '15px', padding: '5px 0' },
+  footer: { 
+    backgroundColor: '#001F3F', 
+    paddingBottom: 'env(safe-area-inset-bottom)', 
+    zIndex: 101,
+    boxSizing: 'border-box'
+  },
+  inputRow: { 
+    display: 'flex', 
+    alignItems: 'center', 
+    padding: '10px 15px', 
+    gap: '10px',
+    minHeight: '60px' 
+  },
+  iconBtn: { background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' },
+  inputContainer: { 
+    flex: 1, 
+    backgroundColor: '#FFF', 
+    borderRadius: '25px', 
+    display: 'flex', 
+    alignItems: 'center', 
+    padding: '4px 15px',
+    overflow: 'hidden'
+  },
+  textInput: { 
+    flex: 1, 
+    border: 'none', 
+    outline: 'none', 
+    fontSize: '15px', 
+    padding: '6px 0',
+    backgroundColor: 'transparent'
+  },
 };
