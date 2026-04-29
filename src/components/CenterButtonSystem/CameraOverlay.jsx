@@ -1,300 +1,209 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { db } from '../../firebase'; 
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { filterList } from './FilterData'; 
-import GiftModal from './GiftModal';
+import { LiveKitRoom, VideoTrack, useTracks } from '@livekit/components-react';
+import { Track } from 'livekit-client';
+import { AccessToken } from 'livekit-server-sdk';
+import { Buffer } from 'buffer';
+
+window.Buffer = Buffer;
+
+// 📍 ข้อมูลระบบภายใน
+const GIFT_LIST = [
+  { id: 1, name: 'หัวใจ', price: 10, icon: '❤️' },
+  { id: 2, name: 'กุหลาบ', price: 50, icon: '🌹' },
+  { id: 3, name: 'รถสปอร์ต', price: 1000, icon: '🏎️' }
+];
+
+const FILTERS = [
+  { id: 'none', name: 'ปกติ', value: 'none' },
+  { id: 'bright', name: 'สว่าง', value: 'brightness(1.2) contrast(1.1)' },
+  { id: 'pink', name: 'ชมพู', value: 'sepia(0.3) hue-rotate(-30deg) saturate(1.4)' }
+];
 
 export default function CameraOverlay({ onClose, onNavigateToPost }) { 
-  const [activeTab, setActiveTab] = useState('15 วินาที'); 
-  const [stream, setStream] = useState(null);
-  const [filter, setFilter] = useState('none');
-  const [showFilters, setShowFilters] = useState(false);
-  const [showGifts, setShowGifts] = useState(false);
-  const [facingMode, setFacingMode] = useState("user");
-  
+  const [activeTab, setActiveTab] = useState('LIVE'); 
+  const [isLive, setIsLive] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [selectedMedia, setSelectedMedia] = useState(null); 
+  const [token, setToken] = useState("");
+  const [filter, setFilter] = useState('none');
+  const [showFilters, setShowFilters] = useState(false);
+  const [capturedMedia, setCapturedMedia] = useState(null); 
 
   const videoRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const canvasRef = useRef(null);
-  const mediaRecorderRef = useRef(null); 
+  const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
 
-  const getMaxSeconds = () => {
-    if (activeTab === '10 นาที') return 10 * 60;
-    if (activeTab === '60 วินาที') return 60;
-    if (activeTab === '15 วินาที') return 15;
-    return 0; 
-  };
+  // 1. เปิดกล้องทันที
+  useEffect(() => {
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(s => { if (videoRef.current) videoRef.current.srcObject = s; })
+      .catch(e => alert("กรุณาอนุญาตกล้องและไมค์ครับ"));
+  }, []);
 
-  // --- ระบบ Timer (ใช้เงื่อนไข .includes เหมือนสคริปต์ที่พี่ส่งมาเพื่อให้วิ่งชัวร์) ---
+  // 2. ระบบนับเวลาอัด
   useEffect(() => {
     let timer;
-    const isVideoMode = activeTab.includes('วินาที') || activeTab.includes('นาที');
-
-    if (isRecording && isVideoMode) {
-      timer = setInterval(() => {
-        setRecordingTime(prev => {
-          const nextTime = prev + 1;
-          const maxSecs = getMaxSeconds();
-          if (nextTime >= maxSecs) {
-            stopRecording();
-            return maxSecs;
-          }
-          return nextTime;
-        });
-      }, 1000);
+    if (isRecording) {
+      timer = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
     } else {
       clearInterval(timer);
+      setRecordingTime(0);
     }
     return () => clearInterval(timer);
-  }, [isRecording, activeTab]);
+  }, [isRecording]);
 
-  // --- ฟังก์ชันอัดวิดีโอจริง ---
-  const startRecording = () => {
-    if (!stream) return;
-    chunksRef.current = [];
-    
-    // ตั้งค่า Recorder
-    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
-    };
-    recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-      const videoURL = URL.createObjectURL(blob);
-      setSelectedMedia(videoURL); // เก็บผลลัพธ์วิดีโอไว้โพสต์
-      alert(`🎥 บันทึกวิดีโอ ${activeTab} เรียบร้อย!`);
-    };
-
-    mediaRecorderRef.current = recorder;
-    recorder.start();
-    setIsRecording(true);
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
-  const takePhoto = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (video && canvas) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+  // 3. ฟังก์ชัน Shutter รวมร่าง
+  const handleShutter = async () => {
+    if (activeTab === 'LIVE') {
+      const at = new AccessToken('APIgReK3QiRxggr', '12pwJIgxkOLEqb3sGvomSjYvH8mVkJ5dKL4aMTnx3bP', { identity: 'Host_Nat' });
+      at.addGrant({ roomJoin: true, room: 'HengRoom', canPublish: true });
+      setToken(await at.toJwt());
+      setIsLive(true);
+    } else if (activeTab === 'ถ่ายภาพ') {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
       const ctx = canvas.getContext('2d');
-      ctx.filter = filter;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageBase64 = canvas.toDataURL('image/jpeg');
-      setSelectedMedia(imageBase64); 
-      alert("📸 ถ่ายภาพ HENG HENG เรียบร้อย!");
-    }
-  };
-
-  const handleShutter = () => {
-    if (activeTab === 'ถ่ายภาพ') {
-      takePhoto();
-    } else if (activeTab === 'ไลฟ์สด') {
-      alert("📡 เริ่มสตรีมสด!");
+      ctx.filter = filter; // ใส่ฟิลเตอร์ลงในรูปที่ถ่ายด้วย
+      ctx.drawImage(videoRef.current, 0, 0);
+      setCapturedMedia(canvas.toDataURL('image/jpeg'));
+      alert("📸 ถ่ายภาพสำเร็จ!");
     } else {
       if (isRecording) {
-        stopRecording();
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
       } else {
-        setRecordingTime(0); 
-        startRecording(); // เรียกฟังก์ชันอัดจริง
+        chunksRef.current = [];
+        const recorder = new MediaRecorder(videoRef.current.srcObject);
+        recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
+        recorder.onstop = () => {
+          const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+          setCapturedMedia(URL.createObjectURL(blob));
+          alert("🎥 บันทึกวิดีโอสำเร็จ!");
+        };
+        recorder.start();
+        setIsRecording(true);
       }
     }
   };
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setSelectedMedia(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handlePost = () => {
-    if (!selectedMedia) {
-      alert("กรุณาเลือกรูปหรือถ่ายภาพก่อนครับพี่นัท");
-      return;
-    }
-    if (onNavigateToPost) {
-        onNavigateToPost(selectedMedia);
-    } else {
-        console.log("Media Data:", selectedMedia);
-        alert("🚀 พร้อมส่งข้อมูลไปหน้าโพสต์!");
-    }
+    if (!capturedMedia) return alert("กรุณาถ่ายภาพหรือวิดีโอก่อนโพสต์ครับ");
+    onNavigateToPost(capturedMedia);
   };
 
-  useEffect(() => {
-    const startCamera = async () => {
-      try {
-        if (stream) stream.getTracks().forEach(track => track.stop());
-        const s = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode, width: 1280, height: 720 }, audio: true 
-        });
-        setStream(s);
-        if (videoRef.current) videoRef.current.srcObject = s;
-      } catch (e) { console.log("Camera access denied"); }
-    };
-    startCamera();
-    return () => { if (stream) stream.getTracks().forEach(t => t.stop()); };
-  }, [facingMode]);
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const progressPercent = getMaxSeconds() > 0 ? (recordingTime / getMaxSeconds()) * 100 : 0;
+  if (isLive && token) {
+    return (
+      <div style={styles.fullScreen}>
+        <LiveKitRoom token={token} serverUrl="wss://hengheng-app-u9uv9u9s.livekit.cloud" connect={true}>
+           <LiveLayout onLeave={() => setIsLive(false)} filter={filter} />
+        </LiveKitRoom>
+      </div>
+    );
+  }
 
   return (
-    <div style={styles.overlay}>
-      <video ref={videoRef} autoPlay playsInline style={{ ...styles.preview, filter: filter }} />
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
-
-      <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*,video/*" onChange={handleFileSelect} />
-
-      <div style={styles.topHeader}>
-        <div style={styles.closeBtn} onClick={onClose}>✕</div>
-        <div style={styles.centerTop}>
-          {isRecording ? (
-            <div style={styles.timerBadge}>
-              <span style={styles.redDot}>●</span> {formatTime(recordingTime)} / {formatTime(getMaxSeconds())}
-            </div>
-          ) : (
-            <div style={styles.musicBtn} onClick={() => alert("เลือกเพลง")}>🎵 เพิ่มเสียง</div>
-          )}
-        </div>
-        <div style={{width: '30px'}} /> 
+    <div style={styles.fullScreen}>
+      <video ref={videoRef} autoPlay playsInline style={{...styles.video, filter}} />
+      
+      {/* 🛠 เครื่องมือด้านข้าง: ฟิลเตอร์ & เติมเงิน TrueMoney */}
+      <div style={styles.sideTools}>
+        <div onClick={() => setShowFilters(!showFilters)} style={styles.toolBtn}>✨<br/><span style={{fontSize: 10}}>ฟิลเตอร์</span></div>
+        <div onClick={() => window.open('https://www.truemoney.com/', '_blank')} style={styles.toolBtn}>💰<br/><span style={{fontSize: 10}}>เติมเหรียญ</span></div>
       </div>
 
-      {!isRecording && (
-        <div style={styles.sideTools}>
-          <div style={styles.toolItem} onClick={() => setFacingMode(f => f === "user" ? "environment" : "user")}>
-            <span style={styles.iconCircle}>🔄</span>
-            <span style={styles.toolLabel}>พลิก</span>
-          </div>
-          <div style={styles.toolItem} onClick={() => setShowFilters(!showFilters)}>
-            <span style={styles.iconCircle}>✨</span>
-            <span style={styles.toolLabel}>ฟิลเตอร์</span>
-          </div>
-          {activeTab === 'ไลฟ์สด' && (
-            <div style={styles.toolItem} onClick={() => setShowGifts(true)}>
-              <span style={styles.iconCircle}>🎁</span>
-              <span style={styles.toolLabel}>ของขวัญ</span>
-            </div>
-          )}
-          <div style={styles.toolItem} onClick={() => alert("ตั้งค่า")}>
-            <span style={styles.iconCircle}>⚙️</span>
-            <span style={styles.toolLabel}>ตั้งค่า</span>
-          </div>
-        </div>
-      )}
+      <div style={styles.topUI}>
+        <div onClick={onClose} style={styles.closeBtn}>✕</div>
+        {isRecording && <div style={styles.timer}>{recordingTime}s</div>}
+      </div>
 
-      {showFilters && !isRecording && (
-        <div style={styles.filterTray}>
-          {filterList.map((f) => (
-            <div key={f.id} style={styles.filterCircle} onClick={() => setFilter(f.value)}>
-              <div style={{...styles.filterThumb, filter: f.value, backgroundImage: `url(${f.thumb})`, backgroundSize: 'cover'}} />
-              <span style={{fontSize: '9px', color: '#fff'}}>{f.name}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div style={styles.bottomArea}>
-        {!isRecording && (
-          <div style={styles.tabSelector}>
-            {['10 นาที', '60 วินาที', '15 วินาที', 'ถ่ายภาพ', 'ไลฟ์สด'].map((tab) => (
-              <span key={tab} onClick={() => setActiveTab(tab)} style={activeTab === tab ? styles.tabActive : styles.tabInactive}>
-                {tab}
-              </span>
+      <div style={styles.bottomUI}>
+        {showFilters && (
+          <div style={styles.tray}>
+            {FILTERS.map(f => (
+              <div key={f.id} onClick={() => { setFilter(f.value); setShowFilters(false); }} style={styles.item}>{f.name}</div>
             ))}
           </div>
         )}
 
+        <div style={styles.tabBar}>
+          {['ถ่ายภาพ', '15 วินาที', '60 วินาที', 'LIVE'].map(t => (
+            <span key={t} onClick={() => setActiveTab(t)} 
+              style={activeTab === t ? styles.tabActive : styles.tabInactive}>
+              {t}
+            </span>
+          ))}
+        </div>
+
         <div style={styles.shutterRow}>
-          <div style={{...styles.subBtn, opacity: isRecording ? 0 : 1}} onClick={() => fileInputRef.current.click()}>
-            <div style={{
-              ...styles.galleryPreview,
-              backgroundImage: selectedMedia ? (selectedMedia.startsWith('blob:') ? 'none' : `url(${selectedMedia})`) : 'none',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundColor: selectedMedia ? '#ff4d4d' : 'rgba(255,255,255,0.2)'
-            }}>
-                {selectedMedia && selectedMedia.startsWith('blob:') && <span style={{fontSize: '10px'}}>VIDEO</span>}
-            </div>
-            <span style={styles.subBtnText}>คลังภาพ</span>
-          </div>
-
-          <div style={styles.shutterOuter} onClick={handleShutter}>
-             {isRecording && (
-               <svg style={styles.progressSvg}>
-                 <circle cx="41" cy="41" r="38" stroke="#ff4d4d" strokeWidth="5" fill="none" 
-                   strokeDasharray={238} strokeDashoffset={238 - (238 * progressPercent) / 100} 
-                   strokeLinecap="round" style={{transition: 'stroke-dashoffset 1s linear'}}
-                 />
-               </svg>
-             )}
-            <div style={{
-              ...styles.shutterInner,
-              backgroundColor: activeTab === 'ไลฟ์สด' ? '#fff' : '#ff4d4d',
-              borderRadius: isRecording ? '8px' : '50%',
-              transform: isRecording ? 'scale(0.5)' : 'scale(1)',
-              transition: 'all 0.2s'
-            }} />
-          </div>
-
-          <div style={{...styles.subBtn, opacity: (isRecording || !selectedMedia) ? 0.5 : 1}} onClick={handlePost}>
-            <div style={styles.fbPostBtn}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" /></svg>
-            </div>
-            <span style={{...styles.subBtnText, color: '#1877F2', fontWeight: 'bold'}}>โพสต์</span>
-          </div>
+           <div style={{width: 50}} />
+           <div onClick={handleShutter} style={styles.shutterOuter}>
+              <div style={{
+                ...styles.shutterInner, 
+                backgroundColor: activeTab === 'LIVE' ? '#fff' : '#ff4d4d',
+                borderRadius: isRecording ? '8px' : '50%'
+              }} />
+           </div>
+           <div onClick={handlePost} style={{...styles.postBtn, opacity: capturedMedia ? 1 : 0.5}}>
+              <span>📤</span>
+              <p style={{fontSize: 10, margin: 0}}>โพสต์</p>
+           </div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      {showGifts && <GiftModal onClose={() => setShowGifts(false)} />}
+function LiveLayout({ onLeave, filter }) {
+  const [showGifts, setShowGifts] = useState(false);
+  const tracks = useTracks([{ source: Track.Source.Camera, withPlaceholder: true }]);
+  return (
+    <div style={{width: '100%', height: '100%', position: 'relative'}}>
+      <VideoTrack trackRef={tracks[0]} style={{width: '100%', height: '100%', objectFit: 'cover', filter}} />
+      <div style={styles.liveOverlayUI}>
+         <div style={styles.liveBadge}>LIVE</div>
+         <div style={{display: 'flex', gap: 15}}>
+            <div onClick={() => setShowGifts(!showGifts)} style={styles.giftBtnIcon}>🎁</div>
+            <div onClick={onLeave} style={styles.exitBtn}>จบไลฟ์</div>
+         </div>
+      </div>
+
+      {showGifts && (
+        <div style={styles.giftTray}>
+          {GIFT_LIST.map(g => (
+            <div key={g.id} style={styles.giftItem} onClick={() => { alert(`ส่ง ${g.name} แล้ว!`); setShowGifts(false); }}>
+              <span style={{fontSize: 30}}>{g.icon}</span>
+              <p style={{fontSize: 12, margin: 0}}>{g.price}฿</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 const styles = {
-  overlay: { position: 'fixed', inset: 0, background: '#000', zIndex: 9999, display: 'flex', flexDirection: 'column', color: '#fff', overflow: 'hidden', fontFamily: 'sans-serif' },
-  preview: { width: '100%', height: '100%', objectFit: 'cover' },
-  topHeader: { position: 'absolute', top: '40px', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px', zIndex: 10 },
-  closeBtn: { fontSize: '26px', cursor: 'pointer', textShadow: '0 0 4px #000' },
-  centerTop: { display: 'flex', alignItems: 'center' },
-  musicBtn: { background: 'rgba(0,0,0,0.4)', padding: '6px 15px', borderRadius: '20px', fontSize: '13px', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.2)' },
-  timerBadge: { background: 'rgba(255,0,0,0.7)', padding: '5px 15px', borderRadius: '20px', fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center' },
-  redDot: { color: '#fff', animation: 'blink 1s infinite', marginRight: '6px' },
-  sideTools: { position: 'absolute', right: '12px', top: '100px', display: 'flex', flexDirection: 'column', gap: '18px', zIndex: 10 },
-  toolItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', cursor: 'pointer' },
-  iconCircle: { fontSize: '24px', textShadow: '0 0 4px #000' },
-  toolLabel: { fontSize: '11px', textShadow: '0 0 2px #000', fontWeight: '500' },
-  bottomArea: { position: 'absolute', bottom: '30px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px', zIndex: 10 },
-  tabSelector: { display: 'flex', gap: '20px', fontSize: '14px', fontWeight: 'bold', textShadow: '0 0 4px #000', width: '100%', justifyContent: 'center', overflowX: 'auto', padding: '10px 0' },
-  tabActive: { color: '#fff', borderBottom: '2px solid #fff', paddingBottom: '6px', whiteSpace: 'nowrap' },
-  tabInactive: { color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' },
-  shutterRow: { width: '100%', display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '0 30px' },
-  shutterOuter: { position: 'relative', width: '82px', height: '82px', borderRadius: '50%', border: '5px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
-  shutterInner: { width: '66px', height: '66px', transition: 'all 0.2s' },
-  progressSvg: { position: 'absolute', width: '82px', height: '82px', transform: 'rotate(-90deg)', pointerEvents: 'none' },
-  subBtn: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer', transition: 'opacity 0.3s' },
-  subBtnText: { fontSize: '12px', textShadow: '0 0 4px #000' },
-  galleryPreview: { width: '42px', height: '42px', borderRadius: '8px', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  fbPostBtn: { width: '45px', height: '45px', borderRadius: '50%', background: '#1877F2', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: '2px solid #fff' },
-  filterTray: { position: 'absolute', bottom: '220px', width: '100%', display: 'flex', overflowX: 'auto', gap: '15px', padding: '15px', background: 'rgba(0,0,0,0.5)' },
-  filterCircle: { minWidth: '65px', textAlign: 'center' },
-  filterThumb: { width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #fff', marginBottom: '6px' },
+  fullScreen: { position: 'fixed', inset: 0, backgroundColor: '#000', zIndex: 999999 },
+  video: { width: '100%', height: '100%', objectFit: 'cover' },
+  topUI: { position: 'absolute', top: 40, width: '100%', padding: '0 20px', display: 'flex', justifyContent: 'space-between', zIndex: 10 },
+  closeBtn: { fontSize: 32, color: '#fff', cursor: 'pointer' },
+  timer: { backgroundColor: '#ff4d4d', padding: '5px 15px', borderRadius: 20, color: '#fff', fontWeight: 'bold' },
+  sideTools: { position: 'absolute', right: 20, top: 100, display: 'flex', flexDirection: 'column', gap: 20, zIndex: 10 },
+  toolBtn: { textAlign: 'center', color: '#fff', fontSize: 24, cursor: 'pointer', background: 'rgba(0,0,0,0.4)', padding: 10, borderRadius: 10 },
+  bottomUI: { position: 'absolute', bottom: 40, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 10 },
+  tray: { display: 'flex', gap: 15, background: 'rgba(0,0,0,0.8)', padding: '15px 25px', borderRadius: 25, marginBottom: 20 },
+  item: { color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 'bold' },
+  tabBar: { display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 20, color: '#fff' },
+  tabActive: { fontWeight: 'bold', borderBottom: '2px solid #fff', paddingBottom: 5 },
+  tabInactive: { opacity: 0.6 },
+  shutterRow: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 30 },
+  shutterOuter: { width: 80, height: 80, borderRadius: '50%', border: '4px solid #fff', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' },
+  shutterInner: { width: 62, height: 62, transition: 'all 0.2s' },
+  postBtn: { textAlign: 'center', color: '#fff', cursor: 'pointer' },
+  liveOverlayUI: { position: 'absolute', top: 40, left: 20, right: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  liveBadge: { backgroundColor: '#ff4d4d', color: '#fff', padding: '5px 10px', borderRadius: 5, fontWeight: 'bold' },
+  giftBtnIcon: { fontSize: 30, cursor: 'pointer' },
+  exitBtn: { backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', padding: '5px 15px', borderRadius: 20, cursor: 'pointer' },
+  giftTray: { position: 'absolute', bottom: 50, width: '90%', left: '5%', display: 'flex', justifyContent: 'space-around', background: 'rgba(0,0,0,0.8)', padding: '20px', borderRadius: 20 },
+  giftItem: { textAlign: 'center', color: '#fff', cursor: 'pointer' }
 };
-

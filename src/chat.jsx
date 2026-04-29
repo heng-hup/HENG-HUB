@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Phone, Menu, UserPlus, X, Plus, Smile, Mic, Send } from 'lucide-react'; 
+
+// --- [1] Import Components & Actions ---
 import { ActionButtons } from './components/ActionButtons';
 import ToolGrid from './components/ToolGrid';
+import MessageContextMenu from './components/MessageContextMenu.jsx';
 
-// --- [1] Import Actions ที่สร้างไว้แยกไฟล์ (ปุ่มใครปุ่มมัน) ---
+// Import Logic ของแต่ละปุ่ม (แยกไฟล์เพื่อความเป็นระเบียบ)
 import * as CopyAll from './actions/contextMenu/CopyAllBtn';
 import * as Translate from './actions/contextMenu/TranslateBtn';
 import * as SaveNote from './actions/contextMenu/SaveNoteBtn';
@@ -15,65 +18,67 @@ import * as Capture from './actions/contextMenu/CaptureBtn';
 import * as Unsend from './actions/contextMenu/UnsendBtn';
 import * as EmojiAction from './actions/contextMenu/EmojiAction';
 
-// Import Component เมนูคลิกขวา
-import MessageContextMenu from './components/MessageContextMenu.jsx';
-
 export default function HengHengSuperApp() {
-  // --- [2] State เดิมของคุณนัต (ห้ามลบ) ---
+  // --- [2] State Management ---
   const [showTools, setShowTools] = useState(false);
   const [showCallMenu, setShowCallMenu] = useState(false);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
-
-  // --- [3] State ใหม่สำหรับระบบเมนู 20 ปุ่ม ---
+  
+  // State สำหรับระบบ Context Menu 20 ปุ่ม
   const [contextMenu, setContextMenu] = useState(null); 
-  const [replyTo, setReplyTo] = useState(null);
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [pinnedList, setPinnedList] = useState([]);
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [replyTo, setReplyTo] = useState(null); // สำหรับฟีเจอร์ตอบกลับ
+  const [pinnedList, setPinnedList] = useState([]); // สำหรับข้อความประกาศ (Pin)
+  
+  const chatContainerRef = useRef(null);
 
-  // รวม Setters เพื่อส่งไปให้สคริปต์ย่อยสั่งงาน
-  const chatSetters = { setMessages, setReplyTo, setShowSidebar, setPinnedList, setIsCollapsed };
+  // รวม Setters ส่งไปให้ Action ย่อยๆ เรียกใช้งาน
+  const chatSetters = { 
+    setMessages, 
+    setReplyTo, 
+    setPinnedList,
+    closeMenu: () => setContextMenu(null)
+  };
 
-  // --- [4] ฟังก์ชันหลักเดิม (ห้ามลบ) ---
+  // --- [3] Core Functions ---
+
   const sendMessage = (content, type = 'text') => {
     if (type === 'text' && !content?.trim() && !text.trim()) return;
     
     const newMsg = {
       id: Date.now(),
+      msgId: Date.now().toString(),
       content: content || text,
+      msgText: content || text, // เก็บไว้สำหรับฟังก์ชัน Copy/Translate
       type: type, 
       sender: 'me',
+      senderName: 'คุณนัต',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      msgId: Date.now().toString(),
-      msgText: content || text,
-      // เพิ่มข้อมูลการตอบกลับเข้าไปในข้อความใหม่ (ถ้ามี)
-      replyData: replyTo ? { ...replyTo } : null 
+      replyData: replyTo ? { ...replyTo } : null, // เก็บข้อมูลการตอบกลับ
+      reaction: null
     };
     
     setMessages(prev => [...prev, newMsg]);
     setText("");
+    setReplyTo(null); // เคลียร์สถานะตอบกลับหลังส่ง
     setShowTools(false);
-    setShowCallMenu(false);
-    setReplyTo(null); 
   };
 
-  // --- [5] ฟังก์ชันจัดการ Action จากเมนูคลิกขวา ---
+  // จัดการ Action เมื่อกดปุ่มในเมนูคลิกขวา
   const handleContextMenuAction = (actionId, data) => {
     switch (actionId) {
       case 'copy_all':    CopyAll.exec(data.msgText); break;
       case 'translate':   Translate.exec(data.msgText); break;
-      case 'note':        SaveNote.exec(data.msgText, chatSetters); break;
+      case 'note':        SaveNote.exec(data, chatSetters); break;
       case 'delete_local': DeleteMsg.exec(data.msgId, chatSetters); break;
       case 'reply':       Reply.exec(data, chatSetters); break;
       case 'share':       Share.exec(data.msgText); break;
       case 'pin':         Pin.exec(data, chatSetters); break;
-      case 'capture':     Capture.exec(data.msgId); break;
+      case 'capture':     Capture.exec('chat-area'); break; // แคปเจอร์หน้าจอแชท
       case 'unsend':      Unsend.exec(data.msgId, chatSetters); break;
-      case 'close_menu_only': setContextMenu(null); break;
       default: console.log("Action ID:", actionId);
     }
-    setContextMenu(null); // ปิดเมนูหลังกดใช้งาน
+    setContextMenu(null);
   };
 
   const handleEmojiReaction = (emoji, msgId) => {
@@ -81,99 +86,107 @@ export default function HengHengSuperApp() {
     setContextMenu(null);
   };
 
-  // ฟังก์ชันเปิดเมนู (คำนวณพิกัดให้ทับกลางบรรทัด)
   const onContextMenu = (e, m) => {
     e.preventDefault();
-    // ใช้ clientX/Y เพื่อความแม่นยำในการวางตำแหน่ง Fixed
     setContextMenu({ x: e.clientX, y: e.clientY, msg: m }); 
   };
 
+  // --- [4] Render UI ---
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', backgroundColor: '#F5F5F5', overflow: 'hidden', position: 'relative' }}>
+    <div style={styles.appContainer}>
       
-      {/* Header เดิมของคุณนัต */}
-      <div style={{ backgroundColor: '#FFD700', padding: '10px 15px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 100 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '35px', height: '35px', backgroundColor: '#001F3F', borderRadius: '50%', color: '#FFF', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>H</div>
-          <span style={{ fontWeight: 'bold', color: '#001F3F', fontSize: '18px' }}>HENG HENG</span>
+      {/* Header Area */}
+      <div style={styles.header}>
+        <div style={styles.headerLeft}>
+          <div style={styles.logoBadge}>H</div>
+          <span style={styles.brandName}>HENG HENG</span>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '18px', color: '#001F3F' }}>
+        <div style={styles.headerIcons}>
           <Search size={22} />
           <div style={{ position: 'relative' }}>
             <Phone size={22} onClick={() => setShowCallMenu(!showCallMenu)} style={{ cursor: 'pointer' }} />
             {showCallMenu && (
-              <div style={{ position: 'absolute', top: '40px', right: '-10px', backgroundColor: '#FFF', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', borderRadius: '12px', width: '140px', overflow: 'hidden', zIndex: 1000 }}>
-                <div onClick={() => sendMessage('กำลังโทรออก...', 'action')} style={{ padding: '12px', borderBottom: '1px solid #EEE', cursor: 'pointer', color: '#001F3F' }}>โทร</div>
-                <div onClick={() => sendMessage('กำลังเริ่มวิดีโอคอล...', 'action')} style={{ padding: '12px', cursor: 'pointer', color: '#001F3F' }}>วิดีโอคอล</div>
+              <div style={styles.callDropdown}>
+                <div onClick={() => sendMessage('กำลังโทรออก...', 'action')} style={styles.dropdownItem}>โทร</div>
+                <div onClick={() => sendMessage('กำลังเริ่มวิดีโอคอล...', 'action')} style={styles.dropdownItem}>วิดีโอคอล</div>
               </div>
             )}
           </div>
-          <UserPlus size={22} onClick={() => sendMessage('สร้างกลุ่มใหม่เรียบร้อย', 'action')} style={{ cursor: 'pointer' }} /> 
+          <UserPlus size={22} onClick={() => sendMessage('สร้างกลุ่มใหม่เรียบร้อย', 'action')} /> 
           <Menu size={22} />
         </div>
       </div>
 
-      {/* Chat Area + ดัก Context Menu */}
+      {/* Pinned Messages (ประกาศ) เหมือน Line */}
+      {pinnedList.length > 0 && (
+        <div style={styles.pinBar}>
+          📌 {pinnedList[pinnedList.length - 1].msgText}
+        </div>
+      )}
+
+      {/* Chat Content Area */}
       <div 
-        style={{ flex: 1, overflowY: 'auto', padding: '15px' }} 
+        id="chat-area"
+        ref={chatContainerRef}
+        style={styles.chatArea} 
         onClick={() => { setShowCallMenu(false); setShowTools(false); setContextMenu(null); }}
       >
         {messages.map(m => (
           <div 
             key={m.id} 
-            style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}
+            style={styles.messageRow}
             onContextMenu={(e) => onContextMenu(e, m)}
           >
-            <div id={`msg-${m.msgId}`} style={{ 
-              maxWidth: '75%', 
+            <div id={`msg-${m.msgId}`} style={{
+              ...styles.messageBubble,
               backgroundColor: m.type === 'text' ? '#001F3F' : (m.type === 'action' ? '#FFD700' : 'transparent'),
-              padding: m.type === 'text' || m.type === 'action' ? '10px 15px' : '0',
-              borderRadius: '15px', 
               color: m.type === 'action' ? '#001F3F' : '#FFF',
-              position: 'relative',
-              boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
             }}>
-              {/* แสดงข้อความที่ตอบกลับ (ถ้ามี) */}
+              {/* UI ตอบกลับภายใน Bubble */}
               {m.replyData && (
-                <div style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: '5px 10px', borderRadius: '8px', marginBottom: '5px', borderLeft: '3px solid #FFD700', fontSize: '12px' }}>
+                <div style={styles.innerReplyBox}>
                    <div style={{ fontWeight: 'bold', color: '#FFD700' }}>{m.replyData.sender}</div>
-                   <div style={{ opacity: 0.8 }}>{m.replyData.text}</div>
+                   <div style={{ opacity: 0.8, fontSize: '11px' }}>{m.replyData.text}</div>
                 </div>
               )}
 
-              {m.reaction && <div style={{ position: 'absolute', bottom: '-10px', left: '0', fontSize: '16px', background: '#FFF', borderRadius: '50%', padding: '2px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>{m.reaction}</div>}
-              {m.type === 'image' && <img src={m.content} style={{ width: '100%', borderRadius: '15px', border: '2px solid #001F3F' }} />}
-              {m.type === 'video' && <video src={m.content} controls style={{ width: '100%', borderRadius: '15px' }} />}
+              {/* Reaction Emoji Badge */}
+              {m.reaction && <div style={styles.reactionBadge}>{m.reaction}</div>}
+
+              {/* Message Content */}
               {m.type === 'text' && <span>{m.content}</span>}
               {m.type === 'action' && <span style={{ fontWeight: 'bold' }}>{m.content}</span>}
-              <div style={{ fontSize: '10px', textAlign: 'right', marginTop: '5px', opacity: 0.7 }}>{m.time}</div>
+              
+              <div style={styles.msgTime}>{m.time}</div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* ฟีเจอร์ "ตอบกลับ" UI (แถบสีเหลืองหรู) */}
+      {/* Reply Preview UI (แถบตอบกลับเหนือช่องพิมพ์) */}
       {replyTo && (
-        <div style={{ backgroundColor: '#FFFFFF', padding: '10px 15px', borderLeft: '5px solid #FFD700', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #EEE' }}>
-          <div style={{ overflow: 'hidden' }}>
-            <div style={{ fontSize: '12px', color: '#001F3F', fontWeight: 'bold' }}>กำลังตอบกลับคุณ {replyTo.sender}</div>
-            <div style={{ fontSize: '13px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{replyTo.text}</div>
+        <div style={styles.replyPreviewBar}>
+          <div style={styles.replyPreviewInfo}>
+            <div style={styles.replySender}>กำลังตอบกลับคุณ {replyTo.sender}</div>
+            <div style={styles.replyText}>{replyTo.text}</div>
           </div>
-          <X size={20} color="#999" style={{ cursor: 'pointer' }} onClick={() => setReplyTo(null)} />
+          <X size={20} color="#999" onClick={() => setReplyTo(null)} style={{cursor:'pointer'}} />
         </div>
       )}
 
-      {/* Footer เดิมของคุณนัต */}
-      <div style={{ backgroundColor: '#001F3F', paddingBottom: 'env(safe-area-inset-bottom)', zIndex: 101 }}>
-        <div style={{ display: 'flex', alignItems: 'center', padding: '12px 18px', gap: '12px' }}>
-          <button style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }} onClick={() => setShowTools(!showTools)}>
+      {/* Footer Area */}
+      <div style={styles.footer}>
+        <div style={styles.inputRow}>
+          <button style={styles.iconBtn} onClick={() => setShowTools(!showTools)}>
             {showTools ? <X size={26} color="#FFD700" /> : <Plus size={26} color="#FFD700" />}
           </button>
+          
           <ActionButtons onSend={sendMessage} />
-          <div style={{ flex: 1, backgroundColor: '#FFF', borderRadius: '25px', display: 'flex', alignItems: 'center', padding: '6px 15px', margin: '0 5px' }}>
+          
+          <div style={styles.inputContainer}>
             <input 
-              style={{ flex: 1, border: 'none', outline: 'none', fontSize: '15px', padding: '5px 0' }} 
+              style={styles.textInput} 
               value={text} 
               onChange={(e) => setText(e.target.value)}
               placeholder="พิมพ์ข้อความ" 
@@ -181,14 +194,15 @@ export default function HengHengSuperApp() {
             />
             <Smile size={20} color="#999" />
           </div>
-          <button style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }} onClick={() => sendMessage()}>
+
+          <button style={styles.iconBtn} onClick={() => sendMessage()}>
             {text.trim() === "" ? <Mic size={26} color="#FFD700" /> : <Send size={26} color="#FFD700" />}
           </button>
         </div>
         {showTools && <ToolGrid onSend={sendMessage} />}
       </div>
 
-      {/* ส่วนเรียกใช้ Context Menu (เมนูเด้งทับหน้าสุด) */}
+      {/* Context Menu 20 ปุ่ม (เลเยอร์บนสุด) */}
       {contextMenu && (
         <MessageContextMenu 
           x={contextMenu.x} 
@@ -202,4 +216,30 @@ export default function HengHengSuperApp() {
   );
 }
 
-
+// --- [5] Styles (หรูหราแบบ Super App) ---
+const styles = {
+  appContainer: { display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', backgroundColor: '#F5F5F5', overflow: 'hidden', position: 'relative' },
+  header: { backgroundColor: '#FFD700', padding: '10px 15px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 100, boxShadow: '0 2px 5px rgba(0,0,0,0.1)' },
+  headerLeft: { display: 'flex', alignItems: 'center', gap: '10px' },
+  logoBadge: { width: '35px', height: '35px', backgroundColor: '#001F3F', borderRadius: '50%', color: '#FFF', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' },
+  brandName: { fontWeight: 'bold', color: '#001F3F', fontSize: '18px' },
+  headerIcons: { display: 'flex', alignItems: 'center', gap: '18px', color: '#001F3F' },
+  callDropdown: { position: 'absolute', top: '40px', right: '-10px', backgroundColor: '#FFF', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', borderRadius: '12px', width: '140px', overflow: 'hidden', zIndex: 1000 },
+  dropdownItem: { padding: '12px', borderBottom: '1px solid #EEE', cursor: 'pointer', color: '#001F3F' },
+  pinBar: { backgroundColor: '#FFF9E6', padding: '8px 15px', fontSize: '13px', borderBottom: '1px solid #FFE699', color: '#856404' },
+  chatArea: { flex: 1, overflowY: 'auto', padding: '15px' },
+  messageRow: { display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' },
+  messageBubble: { maxWidth: '75%', padding: '10px 15px', borderRadius: '15px', position: 'relative', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' },
+  innerReplyBox: { backgroundColor: 'rgba(255,255,255,0.1)', padding: '5px 10px', borderRadius: '8px', marginBottom: '5px', borderLeft: '3px solid #FFD700' },
+  reactionBadge: { position: 'absolute', bottom: '-10px', left: '0', fontSize: '16px', background: '#FFF', borderRadius: '50%', padding: '2px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' },
+  msgTime: { fontSize: '10px', textAlign: 'right', marginTop: '5px', opacity: 0.7 },
+  replyPreviewBar: { backgroundColor: '#FFFFFF', padding: '10px 15px', borderLeft: '5px solid #FFD700', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #EEE' },
+  replyPreviewInfo: { overflow: 'hidden' },
+  replySender: { fontSize: '12px', color: '#001F3F', fontWeight: 'bold' },
+  replyText: { fontSize: '13px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  footer: { backgroundColor: '#001F3F', paddingBottom: 'env(safe-area-inset-bottom)', zIndex: 101 },
+  inputRow: { display: 'flex', alignItems: 'center', padding: '12px 18px', gap: '12px' },
+  iconBtn: { background: 'none', border: 'none', padding: 0, cursor: 'pointer' },
+  inputContainer: { flex: 1, backgroundColor: '#FFF', borderRadius: '25px', display: 'flex', alignItems: 'center', padding: '6px 15px', margin: '0 5px' },
+  textInput: { flex: 1, border: 'none', outline: 'none', fontSize: '15px', padding: '5px 0' },
+};

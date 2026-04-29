@@ -1,6 +1,8 @@
-// FilterData.js
+import React from 'react';
+
+// คลังฟิลเตอร์ทั้งหมด 54 แบบ แบ่งตามหมวดหมู่การใช้งาน
 export const filterList = [
-  // --- หมวด BEAUTY ---
+  // --- หมวด BEAUTY (เน้นงานผิว ออร่า พ่อค้าแม่ค้าใช้ไลฟ์สด) ---
   { id: 1, name: "Original", value: "none", thumb: "https://placehold.co/100/333/fff?text=Org" },
   { id: 2, name: "Luxury Glow", value: "brightness(1.1) contrast(1.1) saturate(1.2)", thumb: "https://placehold.co/100/DAA520/fff?text=Luxury" },
   { id: 3, name: "Soft Pearl", value: "brightness(1.2) blur(0.3px) saturate(0.9)", thumb: "https://placehold.co/100/FFC0CB/333?text=Pearl" },
@@ -11,7 +13,8 @@ export const filterList = [
   { id: 8, name: "Morning Sun", value: "sepia(0.1) brightness(1.1) saturate(1.2)", thumb: "https://placehold.co/100/FFD700/333?text=Morning" },
   { id: 9, name: "Fairytale", value: "hue-rotate(-10deg) brightness(1.15) saturate(1.2)", thumb: "https://placehold.co/100/E6E6FA/333?text=Fairy" },
   { id: 10, name: "Ivory", value: "contrast(0.9) brightness(1.2) sepia(0.1)", thumb: "https://placehold.co/100/FFFFF0/333?text=Ivory" },
-  // --- หมวด VIBE & DANCE ---
+
+  // --- หมวด VIBE & DANCE (เน้นสีสันจัดจ้าน สำหรับสายเต้น/สายตื๊ด) ---
   { id: 11, name: "Retro Dance", value: "sepia(0.3) saturate(1.8) contrast(1.1)", thumb: "https://placehold.co/100/8B4513/fff?text=Retro" },
   { id: 12, name: "Cyber Neon", value: "hue-rotate(80deg) saturate(2.5) contrast(1.2)", thumb: "https://placehold.co/100/00FF00/000?text=Cyber" },
   { id: 13, name: "Party Red", value: "hue-rotate(300deg) saturate(2)", thumb: "https://placehold.co/100/FF0000/fff?text=Party" },
@@ -22,7 +25,8 @@ export const filterList = [
   { id: 18, name: "Clubbing", value: "brightness(0.8) contrast(1.5) saturate(1.5)", thumb: "https://placehold.co/100/2F4F4F/fff?text=Club" },
   { id: 19, name: "Techno", value: "hue-rotate(220deg) brightness(1.2) contrast(1.2)", thumb: "https://placehold.co/100/1E90FF/fff?text=Techno" },
   { id: 20, name: "Fever", value: "sepia(0.2) saturate(2.5) hue-rotate(-20deg)", thumb: "https://placehold.co/100/FF6347/fff?text=Fever" },
-  // --- หมวด MERCHANT ---
+
+  // --- หมวด MERCHANT (เน้นโชว์สินค้าให้ดูสดและชัดเจน) ---
   { id: 21, name: "Fresh Market", value: "saturate(1.6) contrast(1.1) brightness(1.05)", thumb: "https://placehold.co/100/32CD32/fff?text=Fresh" },
   { id: 22, name: "Organic", value: "saturate(1.3) sepia(0.1) contrast(1.1)", thumb: "https://placehold.co/100/556B2F/fff?text=Org" },
   { id: 23, name: "Gold Standard", value: "sepia(0.4) saturate(1.4) brightness(1.1)", thumb: "https://placehold.co/100/B8860B/fff?text=Gold" },
@@ -33,7 +37,8 @@ export const filterList = [
   { id: 28, name: "Sharp Eye", value: "contrast(1.1) brightness(1.1)", thumb: "https://placehold.co/100/4682B4/fff?text=Sharp" },
   { id: 29, name: "Sunny Day", value: "saturate(1.4) brightness(1.1) hue-rotate(5deg)", thumb: "https://placehold.co/100/FFA500/fff?text=Sun" },
   { id: 30, name: "Pro Photo", value: "contrast(1.1) saturate(1.1) brightness(1.05)", thumb: "https://placehold.co/100/008080/fff?text=Pro" },
-  // --- หมวด ART & VINTAGE ---
+
+  // --- หมวด ART & VINTAGE (เน้นอารมณ์หนังและภาพย้อนยุค) ---
   { id: 31, name: "Classy B&W", value: "grayscale(1) contrast(1.3)", thumb: "https://placehold.co/100/000/fff?text=BW" },
   { id: 32, name: "Deep Noir", value: "grayscale(1) contrast(1.8) brightness(0.8)", thumb: "https://placehold.co/100/2F4F4F/fff?text=Noir" },
   { id: 33, name: "Vintage 1990", value: "sepia(0.6) contrast(0.9) brightness(0.9)", thumb: "https://placehold.co/100/A0522D/fff?text=1990" },
@@ -44,7 +49,8 @@ export const filterList = [
   { id: 38, name: "Cold Winter", value: "hue-rotate(180deg) brightness(1.1) saturate(0.5)", thumb: "https://placehold.co/100/AFEEEE/333?text=Cold" },
   { id: 39, name: "Warm Autumn", value: "sepia(0.4) saturate(1.5) hue-rotate(-10deg)", thumb: "https://placehold.co/100/D2691E/fff?text=Fall" },
   { id: 40, name: "Sketch", value: "grayscale(1) contrast(5) invert(1)", thumb: "https://placehold.co/100/fff/000?text=Art" },
-  // --- หมวด EXOTIC ---
+
+  // --- หมวด EXOTIC (ฟิลเตอร์แปลกๆ ล้ำๆ สำหรับทำคอนเทนต์) ---
   { id: 41, name: "Infrared", value: "hue-rotate(120deg) saturate(2) invert(0.1)", thumb: "https://placehold.co/100/FF00FF/fff?text=Infra" },
   { id: 42, name: "Ghost", value: "opacity(0.6) brightness(1.5) blur(1px)", thumb: "https://placehold.co/100/FFFFFF/000?text=Ghost" },
   { id: 43, name: "Negative", value: "invert(1)", thumb: "https://placehold.co/100/000/fff?text=Inv" },
